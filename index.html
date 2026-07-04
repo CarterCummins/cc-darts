@@ -1,1 +1,2359 @@
-<!DOCTYPE html><html><body><h1>CK Darts placeholder</h1></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CK Darts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14151a;
+    --card: #1e2028;
+    --card-active: #23283a;
+    --border: #2c2f3a;
+    --border-accent: #5b8cff;
+    --text: #eef0f5;
+    --text-secondary: #9aa0b0;
+    --text-muted: #6b7180;
+    --danger: #e05a5a;
+    --success: #4fce8a;
+    --teamA: #5b8cff;
+    --teamB: #e08a4f;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 70px 16px 64px;
+  }
+  #app-wrap { width: 100%; max-width: 680px; position: relative; z-index: 1; }
+  #app { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.45); }
+  h1 {
+    font-family: 'Bungee', 'Poppins', cursive;
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    text-align: center;
+    margin: 0 0 4px;
+    background: linear-gradient(90deg, #ff4fd8, #4feaff, #7c4fff, #ffe75b, #ff4fd8);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: logoShift 10s ease-in-out infinite;
+  }
+  @keyframes logoShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    h1 { animation: none; }
+  }
+  .subtitle { text-align: center; color: var(--text-secondary); font-size: 14px; margin: 0 0 20px; }
+  p.label { font-size: 13px; color: var(--text-secondary); margin: 0 0 8px; }
+  input, select, button { font-family: inherit; font-size: 15px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); color: var(--text); padding: 10px 12px; }
+  input:focus, select:focus, button:focus { outline: none; border-color: var(--border-accent); }
+  input[type="text"], input[type="number"] { width: 100%; }
+  button { cursor: pointer; font-weight: 500; transition: transform 0.05s ease; }
+  button:hover { border-color: var(--border-accent); }
+  button:active { transform: scale(0.98); }
+  .btn-primary { border: 2px solid var(--border-accent); color: var(--border-accent); background: var(--card); }
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  .mode-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .mode-row button { flex: 1; }
+  .mode-row button.active { border: 2px solid var(--border-accent); color: var(--border-accent); }
+  #first-row button { flex: 0 1 auto; }
+  .count-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .count-row button { min-width: 44px; }
+  .count-row button.active { border: 2px solid var(--border-accent); color: var(--border-accent); }
+  #name-list input, .team-block input { margin-bottom: 8px; }
+  .team-block { background: var(--card); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
+  .team-block .team-label { font-size: 13px; font-weight: 500; margin: 0 0 8px; }
+  .team-block.a .team-label { color: var(--teamA); }
+  .team-block.b .team-label { color: var(--teamB); }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .player-card { background: var(--card); border-radius: var(--radius); padding: 16px; text-align: center; border: 1px solid var(--border); }
+  .player-card.active { background: var(--card-active); border: 2px solid var(--border-accent); }
+  .player-card .pname { font-size: 13px; color: var(--text-secondary); margin: 0 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-card.active .pname { color: var(--text); font-weight: 500; }
+  .player-card .pscore { font-size: 32px; font-weight: 600; margin: 0; }
+  .turn-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .turn-row p { margin: 0; font-size: 15px; flex: 1; }
+  .entry-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .entry-row input { flex: 1; }
+  .entry-row button { min-width: 90px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--text-muted); font-weight: 400; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  th:last-child, td:last-child { text-align: right; }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+  td:last-child { color: var(--text); }
+  td.bust { color: var(--danger); }
+  .reset-btn { width: 100%; margin-top: 20px; }
+  .finish-wrap { text-align: center; padding: 40px 0; }
+  .trophy { font-size: 48px; margin-bottom: 12px; }
+  .winner-name { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  .winner-sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 24px; }
+  .empty-state { text-align: center; color: var(--text-muted); font-size: 14px; padding: 40px 0; }
+  .history-item { background: var(--card); border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .history-item .hi-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .history-item .hi-date { font-size: 12px; color: var(--text-muted); }
+  .history-item .hi-mode { font-size: 11px; color: var(--text-secondary); background: var(--card-active); padding: 2px 8px; border-radius: 20px; }
+  .history-item .hi-winner { font-size: 14px; }
+  .history-item .hi-winner b { color: var(--success); }
+  .history-item .hi-participants { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .section-heading { font-size: 15px; font-weight: 500; margin: 24px 0 10px; }
+  .section-heading:first-child { margin-top: 0; }
+  .stats-table { margin-bottom: 8px; }
+  .clear-btn { width: 100%; margin-top: 28px; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 8px; }
+  .metric-card { background: var(--card); border-radius: var(--radius); padding: 12px 14px; }
+  .metric-card .m-label { font-size: 12px; color: var(--text-secondary); margin: 0 0 4px; }
+  .metric-card .m-value { font-size: 22px; font-weight: 600; margin: 0; }
+  .metric-card .m-crown { font-size: 18px; margin: 0 0 2px; line-height: 1; }
+  .metric-card .m-name { font-size: 12px; color: var(--text-secondary); margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .table-scroll { overflow-x: auto; margin-bottom: 8px; }
+  .table-scroll table { min-width: 480px; }
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+  .chip { padding: 7px 14px; border-radius: 20px; font-size: 13px; }
+  .chip.used { border-color: var(--border-accent); color: var(--border-accent); background: var(--card-active); }
+  .chip-check { font-style: normal; }
+  .chip-wrap { display: inline-flex; align-items: center; gap: 4px; }
+  .chip-settings { padding: 6px 8px; border-radius: 20px; font-size: 12px; color: var(--text-muted); line-height: 1; }
+  .chip-settings:hover { color: var(--text); }
+  .edit-panel { background: var(--card); border-radius: var(--radius); padding: 14px; margin-top: 12px; margin-bottom: 20px; border: 1px solid var(--border); }
+  .linked-input-row { display: flex; gap: 6px; margin-bottom: 8px; }
+  .linked-input-row input { flex: 1; }
+  .search-spotify-btn { flex: 0 0 auto; padding: 8px 10px; font-size: 14px; }
+  .avatar-preview { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; background: var(--card-active); display: block; }
+  .avatar-placeholder { display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 600; color: var(--text-secondary); }
+  .photo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .photo-row-actions { display: flex; flex-direction: column; gap: 6px; }
+  .photo-row-actions button { font-size: 12px; padding: 7px 12px; }
+  .turn-row .avatar-preview, .turn-row .avatar-placeholder { width: 32px; height: 32px; font-size: 14px; flex-shrink: 0; }
+  .player-row-avatar { width: 36px; height: 36px; font-size: 15px; flex-shrink: 0; }
+  .app-footer { text-align: center; margin-top: 32px; font-size: 12px; color: var(--text-muted); }
+  .app-footer button { background: none; border: none; padding: 0; font-size: 12px; color: var(--text-muted); text-decoration: underline; cursor: pointer; }
+  .changelog-panel { text-align: left; margin-top: 12px; background: var(--card); border-radius: var(--radius); padding: 12px 14px; }
+  .changelog-panel .cl-row { display: flex; gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .changelog-panel .cl-row:last-child { border-bottom: none; }
+  .changelog-panel .cl-v { color: var(--text); font-weight: 500; white-space: nowrap; }
+  .changelog-panel .cl-notes { color: var(--text-secondary); }
+  .snippet-box { background: var(--card); border: 1px solid var(--border-accent); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 16px; }
+  .embed-fallback { margin-top: 8px; }
+  .game-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .game-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px; text-align: left; border-radius: 12px; }
+  .game-card-title { font-size: 16px; font-weight: 600; color: var(--text); }
+  .game-card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.4; }
+  .trippy-fullscreen { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: #08080c; animation: trippyHue 9s linear infinite; pointer-events: none; }
+  .blob { position: absolute; width: 46vmin; height: 46vmin; border-radius: 50%; filter: blur(60px); opacity: 0.85; mix-blend-mode: screen; }
+  .blob.b1 { background: #ff4fd8; top: -8%; left: -8%; animation: blobFloat1 15s ease-in-out infinite; }
+  .blob.b2 { background: #4feaff; top: -6%; right: -10%; animation: blobFloat2 19s ease-in-out infinite; }
+  .blob.b3 { background: #fff24f; bottom: -12%; left: 12%; animation: blobFloat3 17s ease-in-out infinite; }
+  .blob.b4 { background: #7c4fff; bottom: -14%; right: 6%; animation: blobFloat4 21s ease-in-out infinite; }
+  .blob.b5 { background: #4fff8f; top: 34%; left: 34%; animation: blobFloat5 13s ease-in-out infinite; }
+  .choose-game-panel { position: relative; z-index: 1; }
+  @keyframes trippyHue { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
+  @keyframes blobFloat1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40vw, 40vh) scale(1.35); } }
+  @keyframes blobFloat2 { 0%, 100% { transform: translate(0, 0) scale(1.1); } 50% { transform: translate(-40vw, 35vh) scale(0.85); } }
+  @keyframes blobFloat3 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(30vw, -35vh) scale(1.25); } }
+  @keyframes blobFloat4 { 0%, 100% { transform: translate(0, 0) scale(1.15); } 50% { transform: translate(-30vw, -30vh) scale(0.9); } }
+  @keyframes blobFloat5 { 0%, 100% { transform: translate(-15vw, -10vh) scale(0.9); } 50% { transform: translate(20vw, 25vh) scale(1.3); } }
+  @media (prefers-reduced-motion: reduce) {
+    .trippy-fullscreen, .blob { animation: none !important; }
+  }
+  .cricket-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 320px; }
+  .cricket-table th, .cricket-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: center; }
+  .cricket-table th:first-child, .cricket-table td.cricket-label { text-align: left; color: var(--text-secondary); }
+  .cricket-mark { letter-spacing: 2px; }
+  .cricket-target-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(70px, 1fr)); gap: 8px; margin-top: 12px; }
+  .cricket-target.dead { color: var(--text-muted); border-color: var(--border); }
+  .settings-fab { position: fixed; top: 14px; left: 14px; z-index: 50; width: 38px; height: 38px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .menu-fab { position: fixed; top: 14px; left: 60px; z-index: 50; display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 22px; font-size: 14px; font-weight: 500; }
+  .top-right-controls { position: fixed; top: 14px; right: 14px; z-index: 50; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: calc(100vw - 28px); }
+  .players-fab { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 22px; font-size: 14px; font-weight: 500; }
+  .overlay-panel { position: fixed; top: 60px; right: 14px; z-index: 50; width: min(92vw, 460px); max-height: 78vh; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+  .settings-panel { position: fixed; top: 60px; left: 14px; z-index: 50; width: 220px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+  .settings-panel label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+  .settings-panel input[type="color"] { width: 100%; height: 36px; padding: 2px; margin-top: 4px; cursor: pointer; }
+  .players-panel { position: fixed; top: 60px; right: 14px; z-index: 50; width: min(92vw, 300px); max-height: 78vh; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+  .player-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .player-row:last-child { border-bottom: none; }
+  .player-row-info { flex: 1; min-width: 0; }
+  .player-row-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-row-stats { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .player-row-edit { font-size: 12px; padding: 6px 10px; flex-shrink: 0; }
+  .theme-swatch-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 14px; }
+  .theme-swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px; border-radius: 8px; cursor: pointer; border: 1px solid var(--border); background: transparent; }
+  .theme-swatch:hover { border-color: var(--border-strong); }
+  .theme-swatch .swatch-dot { width: 20px; height: 20px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); }
+  .theme-swatch .swatch-label { font-size: 10px; color: var(--text-muted); }
+  .sound-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+  .sound-btn { font-size: 12px; padding: 6px 10px; }
+  .sound-btn.active { border: 2px solid var(--border-accent); color: var(--border-accent); }
+</style>
+</head>
+<body>
+<div id="trippy-bg" class="trippy-fullscreen" style="display:block;">
+  <div class="blob b1"></div>
+  <div class="blob b2"></div>
+  <div class="blob b3"></div>
+  <div class="blob b4"></div>
+  <div class="blob b5"></div>
+</div>
+<button type="button" id="settings-btn" class="settings-fab" aria-label="Settings">&#9881;</button>
+<div class="top-right-controls">
+  <button type="button" id="history-btn" class="players-fab" aria-label="History">&#128220; History</button>
+  <button type="button" id="stats-btn" class="players-fab" aria-label="Stats">&#128202; Stats</button>
+  <button type="button" id="players-btn" class="players-fab" aria-label="Players">&#128101; Players</button>
+</div>
+<button type="button" id="global-menu-btn" class="menu-fab" aria-label="Main menu">&#8962; Main menu</button>
+<div id="history-panel" class="overlay-panel" style="display:none;"></div>
+<div id="stats-panel" class="overlay-panel" style="display:none;"></div>
+<div id="players-panel" class="players-panel" style="display:none;"></div>
+<div id="settings-panel" class="settings-panel" style="display:none;">
+  <p class="label" style="margin-top:0;">Presets</p>
+  <div class="theme-swatch-grid" id="theme-swatch-grid"></div>
+  <p class="label">Custom</p>
+  <label>Background
+    <input type="color" id="theme-bg" />
+  </label>
+  <label>Trim &middot; cards and borders
+    <input type="color" id="theme-card" />
+  </label>
+  <label>Accent color
+    <input type="color" id="theme-accent" />
+  </label>
+  <div style="display:flex; gap:8px; margin-top:10px;">
+    <button type="button" id="theme-reset" style="flex:1;">Reset</button>
+    <button type="button" id="theme-close" class="btn-primary" style="flex:1;">Done</button>
+  </div>
+  <p class="label" style="margin-top:16px;">Click sounds</p>
+  <div class="sound-row" id="sound-row"></div>
+  <p class="label" style="margin-top:16px;">Backup &amp; restore</p>
+  <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Export before downloading a new version of this file, then import it back &mdash; browsers don't share saved data between file downloads.</p>
+  <div style="display:flex; gap:8px;">
+    <button type="button" id="export-data-btn" style="flex:1;">Export</button>
+    <button type="button" id="import-data-btn" style="flex:1;">Import</button>
+  </div>
+  <input type="file" id="import-file-input" accept="application/json" style="display:none;" />
+</div>
+<div id="app-wrap">
+  <h1>CK Darts</h1>
+  <p class="subtitle">Free-for-all or 2v2 teams, with saved players and stats</p>
+  <div id="snippet-zone"></div>
+  <div id="app"></div>
+  <datalist id="roster-list"></datalist>
+  <div class="app-footer">
+    <span id="version-label"></span> &middot; <button type="button" id="changelog-toggle">Changelog</button>
+    <div id="changelog-panel" class="changelog-panel" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var ROSTER_KEY = 'darts_roster_v1';
+  var HISTORY_KEY = 'darts_history_v1';
+  var PROFILES_KEY = 'darts_profiles_v1';
+  var THEME_KEY = 'darts_theme_v1';
+  var DEFAULT_THEME = { bg: '#14151a', card: '#1e2028', accent: '#5b8cff' };
+  var PRESET_THEMES = [
+    { name: 'Midnight', bg: '#14151a', card: '#1e2028', accent: '#5b8cff' },
+    { name: 'Forest', bg: '#0f1a14', card: '#16261d', accent: '#4fce8a' },
+    { name: 'Sunset', bg: '#1a1210', card: '#261a16', accent: '#e08a4f' },
+    { name: 'Crimson', bg: '#1a1113', card: '#261619', accent: '#e05a5a' },
+    { name: 'Royal', bg: '#141220', card: '#1e1a30', accent: '#a06be0' },
+    { name: 'Gold', bg: '#1a1608', card: '#26210f', accent: '#f0c94f' },
+    { name: 'Ocean', bg: '#0d1620', card: '#132230', accent: '#4fc3e0' },
+    { name: 'Mono', bg: '#121212', card: '#1c1c1c', accent: '#d0d0d0' }
+  ];
+
+  var SOUND_KEY = 'darts_sound_v1';
+  var SOUND_OPTIONS = ['none', 'ping', 'doing', 'splat', 'mush', 'acid'];
+  var audioCtx = null;
+
+  function loadSoundSetting(){
+    try { return localStorage.getItem(SOUND_KEY) || 'none'; } catch(e){ return 'none'; }
+  }
+  function saveSoundSetting(v){
+    try { localStorage.setItem(SOUND_KEY, v); } catch(e){}
+  }
+
+  function getAudioCtx(){
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch(e){ audioCtx = null; }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      try { audioCtx.resume(); } catch(e){}
+    }
+    return audioCtx;
+  }
+  function makeNoiseBuffer(ctx, duration){
+    var size = Math.floor(ctx.sampleRate * duration);
+    var buffer = ctx.createBuffer(1, size, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < size; i++) data[i] = Math.random() * 2 - 1;
+    return buffer;
+  }
+  function playPing(ctx){
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1500, t);
+    osc.frequency.exponentialRampToValueAtTime(950, t + 0.12);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.25, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.22);
+  }
+  function playDoing(ctx){
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(220, t);
+    osc.frequency.linearRampToValueAtTime(640, t + 0.08);
+    osc.frequency.linearRampToValueAtTime(180, t + 0.24);
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.3, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
+  function playSplat(ctx){
+    var t = ctx.currentTime;
+    var noise = ctx.createBufferSource();
+    noise.buffer = makeNoiseBuffer(ctx, 0.22);
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(3200, t);
+    filter.frequency.exponentialRampToValueAtTime(180, t + 0.18);
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.35, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    noise.connect(filter).connect(gain).connect(ctx.destination);
+    noise.start(t);
+    noise.stop(t + 0.22);
+  }
+  function playMush(ctx){
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(65, t + 0.3);
+    var oscGain = ctx.createGain();
+    oscGain.gain.setValueAtTime(0.3, t);
+    oscGain.gain.exponentialRampToValueAtTime(0.001, t + 0.34);
+    var noise = ctx.createBufferSource();
+    noise.buffer = makeNoiseBuffer(ctx, 0.3);
+    var noiseFilter = ctx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.value = 350;
+    var noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.14, t);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    osc.connect(oscGain).connect(ctx.destination);
+    noise.connect(noiseFilter).connect(noiseGain).connect(ctx.destination);
+    osc.start(t); osc.stop(t + 0.34);
+    noise.start(t); noise.stop(t + 0.3);
+  }
+  function playAcid(ctx){
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(180, t);
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 16;
+    filter.frequency.setValueAtTime(2400, t);
+    filter.frequency.exponentialRampToValueAtTime(220, t + 0.26);
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.22, t + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+    osc.connect(filter).connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  }
+  function playClickSound(type){
+    var kind = type || loadSoundSetting();
+    if (kind === 'none') return;
+    var ctx = getAudioCtx();
+    if (!ctx) return;
+    function fire(){
+      if (kind === 'ping') playPing(ctx);
+      else if (kind === 'doing') playDoing(ctx);
+      else if (kind === 'splat') playSplat(ctx);
+      else if (kind === 'mush') playMush(ctx);
+      else if (kind === 'acid') playAcid(ctx);
+    }
+    if (ctx.state === 'suspended' && ctx.resume) {
+      ctx.resume().then(fire).catch(fire);
+    } else {
+      fire();
+    }
+  }
+  function initClickSounds(){
+    document.addEventListener('click', function(e){
+      var target = e.target.closest('button, .game-card, .chip, .theme-swatch');
+      if (!target) return;
+      playClickSound();
+    });
+  }
+
+  var APP_VERSION = '2.18.1';
+  var CHANGELOG = [
+    { v: '2.18.1', notes: 'Removed loading="lazy" from the Spotify iframe \u2014 it was deferring iframe initialization, which could push it past the moment your click grants autoplay permission. Worth a fresh test.' },
+    { v: '2.18.0', notes: 'Removed the Spotify Developer credentials feature \u2014 confirmed it can never work from a plain HTML file, since Spotify blocks direct browser requests to their token endpoint with CORS (a known, years-old restriction on their end). Back to one honest approach: the plain embed with autoplay, and the \u25b6 Play button as the reliable manual backup.' },
+    { v: '2.17.1', notes: 'Export/Import now includes your Spotify Client ID/Secret \u2014 previously they weren\u2019t carried over, so a phone or new device would fall back to the old embed method until you re-entered them.' },
+    { v: '2.17.0', notes: 'Added real Spotify Web API playback: enter your free Developer Client ID/Secret in Settings and win songs/snippets play actual ~30s preview clips through a real audio element, which autoplays reliably (not subject to the iframe autoplay issues). Falls back automatically to the old embed method if no credentials are set or a preview isn\u2019t available.' },
+    { v: '2.16.6', notes: 'Win-song embed now fires immediately when the win screen renders, before fireworks/other setup, so it\u2019s as close to your click as possible. Confirmed against Chrome\u2019s own autoplay docs that our permission setup is correct \u2014 remaining flakiness looks like it sits in Spotify\u2019s own embed, which has known community-reported autoplay bugs on their end.' },
+    { v: '2.16.5', notes: 'Reverted to the plain embed method for good \u2014 this is what actually gave varied songs AND varied starting points. The controller API\u2019s seek() turned out to be podcast-only per Spotify\u2019s own docs, so it could never replicate that. If autoplay doesn\u2019t fire, tap the \u25b6 Play button, and check your phone isn\u2019t on silent/mute \u2014 iOS blocks web audio when it is, regardless of code.' },
+    { v: '2.16.4', notes: 'Seek attempt now triggers on Spotify\u2019s "ready"/"playback_started" events too, not just timers. Heads up: Spotify\u2019s own docs describe seek() as being for podcast episodes specifically \u2014 if this still doesn\u2019t work, it may not be supported for music tracks at all, regardless of timing.' },
+    { v: '2.16.3', notes: 'Fixed the skip-ahead not actually applying \u2014 the seek was firing before the player had loaded the track. Now waits for confirmed playback (with fallback timers) before seeking, and bumped the skip to 60 seconds in.' },
+    { v: '2.16.2', notes: 'Restored reliable autoplay using Spotify\u2019s official iFrame API (plain embeds were failing to autoplay entirely). Now skips ahead ~25 seconds after starting so it isn\u2019t dead silent at 0:00 \u2014 not true hook-detection, just a fixed skip, but should feel closer to before.' },
+    { v: '2.16.1', notes: 'Reverted song/snippet playback to the plain embed method \u2014 restores Spotify\u2019s default "hook" starting position instead of always starting at 0:00, for both the 10s snippets and 60s win songs.' },
+    { v: '2.16.0', notes: 'Removed the Play/History/Stats tab bar. Play is now the main view by default. History and Stats moved to top-right pill buttons next to Players, each opening as their own panel.' },
+    { v: '2.15.2', notes: 'Gave the whole app content area a solid card backing so setup screens, gameplay, and stats stand out clearly from the moving background instead of floating loosely over it.' },
+    { v: '2.15.1', notes: 'The psychedelic background now shows on every screen and tab, not just the main menu.' },
+    { v: '2.15.0', notes: 'Added player profile pictures: upload, change, or remove from either the Players panel or a game\u2019s setup screen. Their photo shows next to their name whenever it\u2019s their turn to throw, in every game type.' },
+    { v: '2.14.3', notes: 'Fixed click sounds not playing on mobile Safari \u2014 sound now waits for the audio engine to actually be running before firing, instead of sometimes racing ahead of it.' },
+    { v: '2.14.2', notes: 'Fixed the logo being covered by the Main menu/Players buttons on mobile \u2014 page content now starts low enough to clear them.' },
+    { v: '2.14.1', notes: 'Fixed: clicking the \u2699 edit icon on a saved-player chip a second time now closes the edit panel instead of just reopening it.' },
+    { v: '2.14.0', notes: 'Editing a player from the Players panel no longer drops you into a game setup screen \u2014 it edits right there in the panel. Editing from inside a game\u2019s setup screen still works the same as before. Either way, changes apply everywhere since profiles are shared across all games.' },
+    { v: '2.13.0', notes: 'Players button is now a bigger labeled pill instead of a tiny icon. Added a persistent Main menu button (top-left, next to Settings) so you can switch games anytime, from any tab.' },
+    { v: '2.12.0', notes: 'Added a Players button (top-right, and next to Main menu on the win screen) showing every saved player with their stats at a glance and a one-tap Edit into their profile.' },
+    { v: '2.11.0', notes: 'Added a Main menu button on the win screen (no refresh needed). Clearing stats in the Stats/History tabs no longer deletes the player from saved players. Also fixed the win screen always saying "Checked out from 200" regardless of the game played.' },
+    { v: '2.10.0', notes: 'Added a search button next to each artist/song field that opens Spotify search in a new tab, so you can grab the link and paste it back in faster.' },
+    { v: '2.9.0', notes: 'Artist link mode now supports up to 5 artists per player, randomly picking one (and their top track) each time instead of always the same artist.' },
+    { v: '2.8.0', notes: 'Player song setup now has a toggle: paste 5 individual track links, or just one artist link to play their top track instead (quicker to set up).' },
+    { v: '2.7.0', notes: 'Added UI click sounds (Ping, Doing, Splat, Mush, Acid) synthesized in-browser, selectable in settings. Off by default.' },
+    { v: '2.6.0', notes: 'Gave the CK Darts logo a bold display font with a slow color-shifting gradient, and switched the rest of the app to a friendlier body font (Poppins).' },
+    { v: '2.5.1', notes: 'The psychedelic background now covers the entire screen while choosing a game, with the game picker as a solid standout card on top.' },
+    { v: '2.5.0', notes: 'Added a live animated psychedelic background (hue-shifting blurred blobs) to the game selection screen.' },
+    { v: '2.4.0', notes: 'Added Export/Import in settings so saved players, songs, history, and theme can carry over to a newly downloaded copy of the file.' },
+    { v: '2.3.0', notes: 'Leaderboards now show rank numbers, with a gold/silver/bronze crown next to 1st, 2nd, and 3rd place.' },
+    { v: '2.2.0', notes: 'History tab: delete any single game, not just a whole player. Settings panel: added 8 preset colorways alongside the custom picker.' },
+    { v: '2.1.0', notes: 'Added a settings button (top-left gear icon) to customize the background, card/trim, and accent colors. Saved to your device.' },
+    { v: '2.0.0', notes: 'Added a game picker: 200, 501, 301, 170, Around the Clock, and Cricket. Only 200 plays the 50+ snippet and mid-game music; the rest just play a win song.' },
+    { v: '1.8.1', notes: 'Added a way to delete a player from the Stats and History tabs, not just the Play tab.' },
+    { v: '1.8.0', notes: 'Switched to Spotify\u2019s official iFrame API for more reliable playback, added a manual play fallback, and added 10-second snippets for any throw over 50.' },
+    { v: '1.7.0', notes: 'Players can save up to 5 Spotify songs; a random one plays for 60 seconds when they win.' },
+    { v: '1.6.0', notes: 'Highest throw now shows a crown and the player\u2019s name; added edit/delete for saved players; fireworks on the win screen.' },
+    { v: '1.5.1', notes: 'Renamed the app to CK Darts.' },
+    { v: '1.5.0', notes: 'Choose who goes first; winner starts automatically on "Play again"; version tracking added.' },
+    { v: '1.4.0', notes: 'Saved players now show as tap-to-add chips during setup.' },
+    { v: '1.3.0', notes: 'Per-player breakdown of busts, avg busts, highest throw, and avg highest throw.' },
+    { v: '1.2.0', notes: 'Added overview stats: total busts, avg busts per game, highest throw, avg highest per game.' },
+    { v: '1.1.0', notes: 'Added Play, History, and Stats tabs; saved player roster; 2v2 teams mode.' },
+    { v: '1.0.0', notes: 'Initial release: countdown scorer for 2-8 players from a starting score of 200.' }
+  ];
+
+  function loadTheme(){
+    try {
+      var saved = JSON.parse(localStorage.getItem(THEME_KEY)) || {};
+      return { bg: saved.bg || DEFAULT_THEME.bg, card: saved.card || DEFAULT_THEME.card, accent: saved.accent || DEFAULT_THEME.accent };
+    } catch(e){
+      return { bg: DEFAULT_THEME.bg, card: DEFAULT_THEME.card, accent: DEFAULT_THEME.accent };
+    }
+  }
+  function saveTheme(t){
+    try { localStorage.setItem(THEME_KEY, JSON.stringify(t)); } catch(e){}
+  }
+  function applyTheme(t){
+    document.documentElement.style.setProperty('--bg', t.bg);
+    document.documentElement.style.setProperty('--card', t.card);
+    document.documentElement.style.setProperty('--border-accent', t.accent);
+  }
+  function initSettingsPanel(){
+    var theme = loadTheme();
+    applyTheme(theme);
+    var btn = document.getElementById('settings-btn');
+    var panel = document.getElementById('settings-panel');
+    var bgInput = document.getElementById('theme-bg');
+    var cardInput = document.getElementById('theme-card');
+    var accentInput = document.getElementById('theme-accent');
+    bgInput.value = theme.bg;
+    cardInput.value = theme.card;
+    accentInput.value = theme.accent;
+
+    var swatchGrid = document.getElementById('theme-swatch-grid');
+    swatchGrid.innerHTML = PRESET_THEMES.map(function(p, i){
+      return '<button type="button" class="theme-swatch" data-i="' + i + '">' +
+        '<span class="swatch-dot" style="background:' + p.accent + ';"></span>' +
+        '<span class="swatch-label">' + p.name + '</span>' +
+      '</button>';
+    }).join('');
+    swatchGrid.querySelectorAll('.theme-swatch').forEach(function(b){
+      b.addEventListener('click', function(){
+        var preset = PRESET_THEMES[parseInt(b.dataset.i, 10)];
+        var t = { bg: preset.bg, card: preset.card, accent: preset.accent };
+        bgInput.value = t.bg;
+        cardInput.value = t.card;
+        accentInput.value = t.accent;
+        applyTheme(t);
+        saveTheme(t);
+      });
+    });
+
+    var soundRow = document.getElementById('sound-row');
+    var currentSound = loadSoundSetting();
+    function renderSoundRow(){
+      soundRow.innerHTML = SOUND_OPTIONS.map(function(s){
+        var label = s.charAt(0).toUpperCase() + s.slice(1);
+        return '<button type="button" class="sound-btn ' + (s === currentSound ? 'active' : '') + '" data-sound="' + s + '">' + label + '</button>';
+      }).join('');
+      soundRow.querySelectorAll('.sound-btn').forEach(function(b){
+        b.addEventListener('click', function(){
+          currentSound = b.dataset.sound;
+          saveSoundSetting(currentSound);
+          renderSoundRow();
+        });
+      });
+    }
+    renderSoundRow();
+
+    btn.addEventListener('click', function(){
+      var isOpen = panel.style.display === 'block';
+      hideOtherOverlayPanels('settings-panel');
+      panel.style.display = isOpen ? 'none' : 'block';
+    });
+    document.getElementById('theme-close').addEventListener('click', function(){
+      panel.style.display = 'none';
+    });
+    function updateTheme(){
+      var t = { bg: bgInput.value, card: cardInput.value, accent: accentInput.value };
+      applyTheme(t);
+      saveTheme(t);
+    }
+    bgInput.addEventListener('input', updateTheme);
+    cardInput.addEventListener('input', updateTheme);
+    accentInput.addEventListener('input', updateTheme);
+    document.getElementById('theme-reset').addEventListener('click', function(){
+      bgInput.value = DEFAULT_THEME.bg;
+      cardInput.value = DEFAULT_THEME.card;
+      accentInput.value = DEFAULT_THEME.accent;
+      applyTheme(DEFAULT_THEME);
+      saveTheme(DEFAULT_THEME);
+    });
+
+    document.getElementById('export-data-btn').addEventListener('click', exportAllData);
+    document.getElementById('import-data-btn').addEventListener('click', function(){
+      document.getElementById('import-file-input').click();
+    });
+    document.getElementById('import-file-input').addEventListener('change', function(e){
+      var file = e.target.files[0];
+      if (!file) return;
+      importAllData(file);
+      e.target.value = '';
+    });
+  }
+
+  function initPlayersPanel(){
+    document.getElementById('players-btn').addEventListener('click', togglePlayersPanel);
+  }
+
+  function closeAllOverlayPanels(){
+    ['players-panel', 'settings-panel', 'history-panel', 'stats-panel'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    state.playersPanelEditing = null;
+  }
+
+  function goToMainMenuGlobal(){
+    state.activeTab = 'play';
+    closeAllOverlayPanels();
+    backToChooseGame();
+  }
+  function initGlobalMenuButton(){
+    document.getElementById('global-menu-btn').addEventListener('click', goToMainMenuGlobal);
+  }
+
+  function hideOtherOverlayPanels(exceptId){
+    ['players-panel', 'settings-panel', 'history-panel', 'stats-panel'].forEach(function(id){
+      if (id === exceptId) return;
+      var el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+  }
+
+  function togglePlayersPanel(){
+    var panel = document.getElementById('players-panel');
+    var isOpen = panel.style.display === 'block';
+    hideOtherOverlayPanels('players-panel');
+    if (!isOpen) {
+      state.playersPanelEditing = null;
+      renderPlayersPanel();
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+      state.playersPanelEditing = null;
+    }
+  }
+
+  function toggleHistoryPanel(){
+    var panel = document.getElementById('history-panel');
+    var isOpen = panel.style.display === 'block';
+    hideOtherOverlayPanels('history-panel');
+    if (!isOpen) {
+      renderHistoryTab('history-panel');
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+    }
+  }
+
+  function toggleStatsPanel(){
+    var panel = document.getElementById('stats-panel');
+    var isOpen = panel.style.display === 'block';
+    hideOtherOverlayPanels('stats-panel');
+    if (!isOpen) {
+      renderStatsTab('stats-panel');
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+    }
+  }
+
+  function initHistoryStatsButtons(){
+    document.getElementById('history-btn').addEventListener('click', toggleHistoryPanel);
+    document.getElementById('stats-btn').addEventListener('click', toggleStatsPanel);
+  }
+
+  function renderPlayersPanel(){
+    if (state.playersPanelEditing) {
+      renderPlayersPanelEditForm();
+      return;
+    }
+    var panel = document.getElementById('players-panel');
+    var roster = loadRoster();
+    if (!roster.length) {
+      panel.innerHTML = '<p class="label" style="margin-top:0;">Players</p><div class="empty-state" style="padding:16px 0;">No saved players yet.</div>';
+      return;
+    }
+    var statsList = computeIndividualStats(loadHistory());
+    var statsMap = {};
+    statsList.forEach(function(p){ statsMap[p.name.toLowerCase()] = p; });
+
+    var rows = roster.map(function(n){
+      var s = statsMap[n.toLowerCase()];
+      var statLine = s
+        ? (s.games + ' games &middot; ' + s.wins + ' wins &middot; ' + s.busts + ' busts &middot; high ' + s.highestThrow)
+        : 'No games yet';
+      var safe = n.replace(/"/g, '&quot;');
+      var photo = getProfile(n).photo;
+      return '<div class="player-row">' +
+        avatarHtml(photo, n, 'player-row-avatar') +
+        '<div class="player-row-info">' +
+          '<div class="player-row-name">' + n + '</div>' +
+          '<div class="player-row-stats">' + statLine + '</div>' +
+        '</div>' +
+        '<button type="button" class="player-row-edit" data-name="' + safe + '">Edit</button>' +
+      '</div>';
+    }).join('');
+
+    panel.innerHTML = '<p class="label" style="margin-top:0;">Players</p>' + rows;
+    panel.querySelectorAll('.player-row-edit').forEach(function(b){
+      b.addEventListener('click', function(){
+        var name = b.dataset.name;
+        var profile = getProfile(name);
+        state.playersPanelSongMode = (profile.artistUris && profile.artistUris.length) ? 'artist' : 'tracks';
+        state.playersPanelEditing = name;
+        state.playersPanelPendingPhoto = undefined;
+        renderPlayersPanel();
+      });
+    });
+  }
+
+  function renderPlayersPanelEditForm(){
+    var panel = document.getElementById('players-panel');
+    var name = state.playersPanelEditing;
+    var profile = getProfile(name);
+    var nameSafe = name.replace(/"/g, '&quot;');
+    var artistSafe = (profile.artist || '').replace(/"/g, '&quot;');
+    var mode = state.playersPanelSongMode;
+
+    var modeToggleHtml =
+      '<div class="mode-row" id="pp-song-mode-row" style="margin-bottom:10px;">' +
+        '<button type="button" data-song-mode="tracks" class="' + (mode === 'tracks' ? 'active' : '') + '">5 songs</button>' +
+        '<button type="button" data-song-mode="artist" class="' + (mode === 'artist' ? 'active' : '') + '">Artist link</button>' +
+      '</div>';
+
+    var songFieldsHtml = '';
+    if (mode === 'artist') {
+      var artistInputs = '';
+      for (var ai = 0; ai < 5; ai++) {
+        var artistVal = (profile.artistUris && profile.artistUris[ai]) ? ('https://open.spotify.com/artist/' + profile.artistUris[ai]) : '';
+        artistInputs += '<div class="linked-input-row">' +
+          '<input type="text" class="pp-artist-input" data-ai="' + ai + '" value="' + artistVal.replace(/"/g, '&quot;') + '" placeholder="Spotify artist link ' + (ai + 1) + '" />' +
+          '<button type="button" class="search-spotify-btn" data-pp-target-class="pp-artist-input" data-target-i="' + ai + '" aria-label="Search Spotify">&#128269;</button>' +
+        '</div>';
+      }
+      songFieldsHtml =
+        '<p class="label">Artist links &middot; up to 5, randomly picks one, plays their top track</p>' +
+        artistInputs;
+    } else {
+      var songInputs = '';
+      for (var si = 0; si < 5; si++) {
+        var songVal = (profile.songs && profile.songs[si]) ? profile.songs[si] : '';
+        songInputs += '<div class="linked-input-row">' +
+          '<input type="text" class="pp-song-input" data-si="' + si + '" value="' + songVal.replace(/"/g, '&quot;') + '" placeholder="Spotify track link ' + (si + 1) + '" />' +
+          '<button type="button" class="search-spotify-btn" data-pp-target-class="pp-song-input" data-target-i="' + si + '" aria-label="Search Spotify">&#128269;</button>' +
+        '</div>';
+      }
+      songFieldsHtml =
+        '<p class="label">Win songs &middot; paste Spotify track links, up to 5</p>' +
+        songInputs;
+    }
+
+    panel.innerHTML =
+      '<p class="label" style="margin-top:0; display:flex; align-items:center; justify-content:space-between;">' +
+        '<span>Edit player</span>' +
+        '<button type="button" id="pp-back-btn" class="chip-settings" aria-label="Back to list">&#8592; Back</button>' +
+      '</p>' +
+      '<div class="photo-row">' +
+        '<div id="pp-photo-preview-wrap">' + avatarHtml(profile.photo, name) + '</div>' +
+        '<div class="photo-row-actions">' +
+          '<button type="button" id="pp-photo-upload-btn">Upload photo</button>' +
+          '<button type="button" id="pp-photo-remove-btn" class="btn-danger">Remove photo</button>' +
+        '</div>' +
+        '<input type="file" id="pp-photo-file-input" accept="image/*" style="display:none;" />' +
+      '</div>' +
+      '<input type="text" id="pp-name-input" value="' + nameSafe + '" placeholder="Name" style="margin-bottom:10px;" />' +
+      '<input type="text" id="pp-artist-input" value="' + artistSafe + '" placeholder="Favorite artist (optional)" style="margin-bottom:10px;" />' +
+      modeToggleHtml +
+      songFieldsHtml +
+      '<div style="display:flex; gap:8px; margin-top:8px;">' +
+        '<button type="button" class="btn-primary" id="pp-save-btn" style="flex:1;">Save</button>' +
+        '<button type="button" class="btn-danger" id="pp-delete-btn" style="flex:1;">Delete</button>' +
+      '</div>';
+
+    document.getElementById('pp-back-btn').addEventListener('click', function(){
+      state.playersPanelEditing = null;
+      renderPlayersPanel();
+    });
+    var ppPhotoInput = document.getElementById('pp-photo-file-input');
+    document.getElementById('pp-photo-upload-btn').addEventListener('click', function(){
+      ppPhotoInput.click();
+    });
+    ppPhotoInput.addEventListener('change', function(e){
+      var file = e.target.files[0];
+      if (!file) return;
+      resizeImageToDataUrl(file, 160, function(dataUrl){
+        if (!dataUrl) return;
+        state.playersPanelPendingPhoto = dataUrl;
+        var nameNow = document.getElementById('pp-name-input').value || name;
+        document.getElementById('pp-photo-preview-wrap').innerHTML = avatarHtml(dataUrl, nameNow);
+      });
+      e.target.value = '';
+    });
+    document.getElementById('pp-photo-remove-btn').addEventListener('click', function(){
+      state.playersPanelPendingPhoto = null;
+      var nameNow = document.getElementById('pp-name-input').value || name;
+      document.getElementById('pp-photo-preview-wrap').innerHTML = avatarHtml(null, nameNow);
+    });
+    document.getElementById('pp-song-mode-row').querySelectorAll('button').forEach(function(b){
+      b.addEventListener('click', function(){
+        state.playersPanelSongMode = b.dataset.songMode;
+        renderPlayersPanelEditForm();
+      });
+    });
+    panel.querySelectorAll('.search-spotify-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var cls = b.dataset.ppTargetClass;
+        var idx = b.dataset.targetI;
+        var attr = cls === 'pp-artist-input' ? 'data-ai' : 'data-si';
+        var input = panel.querySelector('.' + cls + '[' + attr + '="' + idx + '"]');
+        var query = input ? input.value.trim() : '';
+        if (!query || parseSpotifyArtistId(query) || parseSpotifyTrackId(query)) {
+          query = document.getElementById('pp-artist-input').value.trim() || query;
+        }
+        if (!query) return;
+        window.open('https://open.spotify.com/search/' + encodeURIComponent(query), '_blank', 'noopener');
+      });
+    });
+    document.getElementById('pp-save-btn').addEventListener('click', function(){
+      var oldName = name;
+      var newNameRaw = document.getElementById('pp-name-input').value;
+      var newName = (newNameRaw || '').trim() || oldName;
+      if (newName.toLowerCase() !== oldName.toLowerCase()) {
+        renameRosterPlayer(oldName, newName);
+      }
+      var artist = document.getElementById('pp-artist-input').value.trim();
+      var existingProfile = getProfile(oldName);
+      var profileToSave = {
+        artist: artist,
+        songs: [],
+        artistUris: [],
+        photo: (state.playersPanelPendingPhoto === undefined) ? (existingProfile.photo || null) : state.playersPanelPendingPhoto
+      };
+      if (state.playersPanelSongMode === 'artist') {
+        var artistUris = [];
+        panel.querySelectorAll('.pp-artist-input').forEach(function(inp){
+          var id = parseSpotifyArtistId(inp.value);
+          if (id && artistUris.indexOf(id) === -1) artistUris.push(id);
+        });
+        profileToSave.artistUris = artistUris.slice(0, 5);
+      } else {
+        var songs = [];
+        panel.querySelectorAll('.pp-song-input').forEach(function(inp){
+          var id = parseSpotifyTrackId(inp.value);
+          if (id && songs.indexOf(id) === -1) songs.push(id);
+        });
+        profileToSave.songs = songs.slice(0, 5);
+      }
+      saveProfile(newName, profileToSave);
+      state.playersPanelEditing = null;
+      renderPlayersPanel();
+    });
+    document.getElementById('pp-delete-btn').addEventListener('click', function(){
+      if (window.confirm('Remove ' + name + ' from saved players? Their past game history and stats will be kept.')) {
+        deleteRosterPlayer(name);
+        state.playersPanelEditing = null;
+        renderPlayersPanel();
+      }
+    });
+  }
+
+  function exportAllData(){
+    var data = {
+      exportedAt: new Date().toISOString(),
+      roster: loadRoster(),
+      profiles: loadProfiles(),
+      history: loadHistory(),
+      theme: loadTheme()
+    };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ck-darts-backup.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function importAllData(file){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var data;
+      try {
+        data = JSON.parse(e.target.result);
+      } catch(err){
+        window.alert('That file doesn\u2019t look like a valid CK Darts backup.');
+        return;
+      }
+      var hasAny = data && (data.roster || data.profiles || data.history || data.theme);
+      if (!hasAny) {
+        window.alert('That file doesn\u2019t look like a valid CK Darts backup.');
+        return;
+      }
+      if (!window.confirm('Import this backup? It will replace your current saved players, songs, history, and theme.')) return;
+      if (data.roster) saveRoster(data.roster);
+      if (data.profiles) saveProfiles(data.profiles);
+      if (data.history) saveHistory(data.history);
+      if (data.theme) saveTheme(data.theme);
+      window.location.reload();
+    };
+    reader.readAsText(file);
+  }
+
+  var GAMES = [
+    { id: '200', label: '200', type: 'countdown', startScore: 200 },
+    { id: '501', label: '501', type: 'countdown', startScore: 501 },
+    { id: '301', label: '301', type: 'countdown', startScore: 301 },
+    { id: '170', label: '170', type: 'countdown', startScore: 170 },
+    { id: 'atc', label: 'Around the clock', type: 'atc' },
+    { id: 'cricket', label: 'Cricket', type: 'cricket' }
+  ];
+  var CRICKET_NUMBERS = ['20', '19', '18', '17', '16', '15', 'B'];
+  var CRICKET_VALUES = { '20': 20, '19': 19, '18': 18, '17': 17, '16': 16, '15': 15, 'B': 25 };
+
+  function getGame(id){
+    for (var i = 0; i < GAMES.length; i++) {
+      if (GAMES[i].id === id) return GAMES[i];
+    }
+    return GAMES[0];
+  }
+  function currentGame(){ return getGame(state.game); }
+  function currentGameType(){ return currentGame().type; }
+
+  function loadRoster(){
+    try { return JSON.parse(localStorage.getItem(ROSTER_KEY)) || []; }
+    catch(e){ return []; }
+  }
+  function saveRoster(r){
+    try { localStorage.setItem(ROSTER_KEY, JSON.stringify(r)); } catch(e){}
+  }
+  function addToRoster(names){
+    var roster = loadRoster();
+    names.forEach(function(n){
+      n = (n || '').trim();
+      if (!n) return;
+      var exists = roster.some(function(r){ return r.toLowerCase() === n.toLowerCase(); });
+      if (!exists) roster.push(n);
+    });
+    saveRoster(roster);
+    return roster;
+  }
+  function renameRosterPlayer(oldName, newName){
+    newName = (newName || '').trim();
+    if (!newName) return;
+    var lowerOld = oldName.toLowerCase();
+
+    var roster = loadRoster();
+    var idx = roster.findIndex(function(r){ return r.toLowerCase() === lowerOld; });
+    if (idx !== -1) roster[idx] = newName;
+    saveRoster(roster);
+
+    var hist = loadHistory();
+    hist.forEach(function(g){
+      if (g.mode === 'ffa') {
+        g.participants = g.participants.map(function(n){ return n.toLowerCase() === lowerOld ? newName : n; });
+        if (g.winner && g.winner.toLowerCase() === lowerOld) g.winner = newName;
+      } else {
+        g.participants = g.participants.map(function(team){
+          return team.map(function(n){ return n.toLowerCase() === lowerOld ? newName : n; });
+        });
+        if (g.winnerMembers) {
+          g.winnerMembers = g.winnerMembers.map(function(n){ return n.toLowerCase() === lowerOld ? newName : n; });
+          g.winner = g.winnerMembers.join(' & ');
+        }
+      }
+      (g.throws || []).forEach(function(entry){
+        if (g.mode === 'ffa' && entry.who && entry.who.toLowerCase() === lowerOld) {
+          entry.who = newName;
+        } else if (g.mode === 'teams' && entry.who) {
+          entry.who = entry.who.split(' & ').map(function(n){ return n.toLowerCase() === lowerOld ? newName : n; }).join(' & ');
+        }
+        (entry.log || []).forEach(function(t){
+          if (t.thrower && t.thrower.toLowerCase() === lowerOld) t.thrower = newName;
+        });
+      });
+    });
+    saveHistory(hist);
+
+    var profiles = loadProfiles();
+    if (profiles[lowerOld]) {
+      profiles[newName.toLowerCase()] = profiles[lowerOld];
+      delete profiles[lowerOld];
+      saveProfiles(profiles);
+    }
+
+    state.names = state.names.map(function(n){ return (n || '').toLowerCase() === lowerOld ? newName : n; });
+    state.teamNames = state.teamNames.map(function(n){ return (n || '').toLowerCase() === lowerOld ? newName : n; });
+  }
+  function deleteRosterPlayer(name){
+    var lower = name.toLowerCase();
+    var roster = loadRoster().filter(function(r){ return r.toLowerCase() !== lower; });
+    saveRoster(roster);
+    var profiles = loadProfiles();
+    if (profiles[lower]) { delete profiles[lower]; saveProfiles(profiles); }
+    state.names = state.names.map(function(n){ return (n || '').toLowerCase() === lower ? '' : n; });
+    state.teamNames = state.teamNames.map(function(n){ return (n || '').toLowerCase() === lower ? '' : n; });
+  }
+  function clearPlayerFromHistory(name){
+    var lower = name.toLowerCase();
+    var hist = loadHistory().filter(function(g){
+      if (g.mode === 'ffa') {
+        return !g.participants.some(function(n){ return n.toLowerCase() === lower; });
+      }
+      return !g.participants.some(function(team){
+        return team.some(function(n){ return n.toLowerCase() === lower; });
+      });
+    });
+    saveHistory(hist);
+  }
+  function purgePlayerCompletely(name){
+    deleteRosterPlayer(name);
+    clearPlayerFromHistory(name);
+  }
+  function loadProfiles(){
+    try { return JSON.parse(localStorage.getItem(PROFILES_KEY)) || {}; }
+    catch(e){ return {}; }
+  }
+  function saveProfiles(p){
+    try { localStorage.setItem(PROFILES_KEY, JSON.stringify(p)); } catch(e){}
+  }
+  function getProfile(name){
+    var profiles = loadProfiles();
+    var p = profiles[(name || '').toLowerCase()];
+    if (!p) return { artist: '', songs: [], artistUris: [], photo: null };
+    if (!p.artistUris) p.artistUris = p.artistUri ? [p.artistUri] : [];
+    if (!p.songs) p.songs = [];
+    if (p.photo === undefined) p.photo = null;
+    return p;
+  }
+  function saveProfile(name, profile){
+    var profiles = loadProfiles();
+    profiles[name.toLowerCase()] = profile;
+    saveProfiles(profiles);
+  }
+  function avatarHtml(photo, name, extraClass){
+    var cls = 'avatar-preview' + (extraClass ? ' ' + extraClass : '');
+    if (photo) return '<img class="' + cls + '" src="' + photo + '" alt="" />';
+    var initial = (name || '?').trim().charAt(0).toUpperCase() || '?';
+    return '<div class="' + cls + ' avatar-placeholder">' + initial + '</div>';
+  }
+  function resizeImageToDataUrl(file, maxDim, callback){
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var w = img.width, h = img.height;
+        var scale = Math.min(1, maxDim / Math.max(w, h));
+        var cw = Math.max(1, Math.round(w * scale));
+        var ch = Math.max(1, Math.round(h * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, cw, ch);
+        try {
+          callback(canvas.toDataURL('image/jpeg', 0.82));
+        } catch(err){
+          callback(null);
+        }
+      };
+      img.onerror = function(){ callback(null); };
+      img.src = e.target.result;
+    };
+    reader.onerror = function(){ callback(null); };
+    reader.readAsDataURL(file);
+  }
+  function parseSpotifyTrackId(input){
+    if (!input) return '';
+    input = input.trim();
+    var m = input.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
+    if (m) return m[1];
+    m = input.match(/spotify:track:([a-zA-Z0-9]+)/);
+    if (m) return m[1];
+    if (/^[a-zA-Z0-9]{15,30}$/.test(input)) return input;
+    return '';
+  }
+  function parseSpotifyArtistId(input){
+    if (!input) return '';
+    input = input.trim();
+    var m = input.match(/spotify\.com\/artist\/([a-zA-Z0-9]+)/);
+    if (m) return m[1];
+    m = input.match(/spotify:artist:([a-zA-Z0-9]+)/);
+    if (m) return m[1];
+    if (/^[a-zA-Z0-9]{15,30}$/.test(input)) return input;
+    return '';
+  }
+  function profileHasAudio(profile){
+    return !!((profile.artistUris && profile.artistUris.length > 0) || (profile.songs && profile.songs.length > 0));
+  }
+  function pickProfileEmbedUri(profile){
+    if (profile.artistUris && profile.artistUris.length) {
+      return 'spotify:artist:' + profile.artistUris[Math.floor(Math.random() * profile.artistUris.length)];
+    }
+    if (profile.songs && profile.songs.length) {
+      return 'spotify:track:' + profile.songs[Math.floor(Math.random() * profile.songs.length)];
+    }
+    return null;
+  }
+
+  window.__spotifyEmbedSrc = window.__spotifyEmbedSrc || {};
+
+  function createSpotifyEmbed(containerId, spotifyUri, durationMs){
+    var target = document.getElementById(containerId);
+    if (!target) return;
+    var parts = spotifyUri.split(':');
+    var type = parts[1];
+    var id = parts[2];
+    var src = 'https://open.spotify.com/embed/' + type + '/' + id + '?utm_source=generator&autoplay=1';
+    window.__spotifyEmbedSrc[containerId] = src;
+    target.innerHTML =
+      '<iframe id="' + containerId + '-iframe" style="border-radius:12px; border:0;" src="' + src + '" width="100%" height="152" allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"></iframe>' +
+      '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654; Play</button>';
+    document.getElementById(containerId + '-fallback').addEventListener('click', function(){
+      var f = document.getElementById(containerId + '-iframe');
+      if (f && window.__spotifyEmbedSrc[containerId]) f.src = window.__spotifyEmbedSrc[containerId];
+    });
+    if (durationMs) {
+      setTimeout(function(){
+        var f = document.getElementById(containerId + '-iframe');
+        if (f) f.src = '';
+      }, durationMs);
+    }
+  }
+
+  function playSpotifySong(containerId, songInfo, durationMs){
+    createSpotifyEmbed(containerId, songInfo.uri, durationMs);
+  }
+  function loadHistory(){
+    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+    catch(e){ return []; }
+  }
+  function saveHistory(h){
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch(e){}
+  }
+  function addHistoryEntry(entry){
+    var h = loadHistory();
+    h.push(entry);
+    saveHistory(h);
+  }
+
+  function refreshRosterDatalist(){
+    var dl = document.getElementById('roster-list');
+    var roster = loadRoster();
+    dl.innerHTML = roster.map(function(n){ return '<option value="' + n.replace(/"/g,'&quot;') + '">'; }).join('');
+  }
+
+  var state = {
+    activeTab: 'play',
+    stage: 'chooseGame',
+    game: '200',
+    mode: 'ffa',
+    count: 2,
+    names: ['', ''],
+    teamNames: ['', '', '', ''],
+    startScore: 200,
+    players: [],
+    teams: [],
+    turnIndex: 0,
+    turnMember: [0, 0],
+    cricketDartsThisTurn: 0,
+    firstIndex: 0,
+    editingPlayer: null,
+    editSongMode: 'tracks',
+    pendingPhoto: undefined,
+    playersPanelEditing: null,
+    playersPanelSongMode: 'tracks',
+    playersPanelPendingPhoto: undefined,
+    winner: null,
+    winnerLabel: null,
+    winnerSong: null
+  };
+
+  function setMode(m){
+    state.mode = m;
+    state.firstIndex = 0;
+    render();
+  }
+
+  function setCount(n){
+    state.count = n;
+    var names = [];
+    for (var i = 0; i < n; i++) names.push(state.names[i] || '');
+    state.names = names;
+    if (state.firstIndex >= n) state.firstIndex = 0;
+    render();
+  }
+
+  function setFirstIndex(i){
+    state.firstIndex = i;
+    render();
+  }
+
+  function openEditPlayer(name){
+    state.editingPlayer = name;
+    var profile = getProfile(name);
+    state.editSongMode = (profile.artistUris && profile.artistUris.length) ? 'artist' : 'tracks';
+    state.pendingPhoto = undefined;
+    render();
+  }
+
+  function toggleEditPlayer(name){
+    if (state.editingPlayer === name) {
+      closeEditPlayer();
+    } else {
+      openEditPlayer(name);
+    }
+  }
+
+  function closeEditPlayer(){
+    state.editingPlayer = null;
+    render();
+  }
+
+  function setEditSongMode(mode){
+    state.editSongMode = mode;
+    render();
+  }
+
+  function updateName(i, val){ state.names[i] = val; }
+  function updateTeamName(i, val){ state.teamNames[i] = val; }
+
+  function toggleChip(name){
+    var arr = state.mode === 'ffa' ? state.names : state.teamNames;
+    var idx = -1;
+    for (var i = 0; i < arr.length; i++) {
+      if ((arr[i] || '').trim().toLowerCase() === name.toLowerCase()) { idx = i; break; }
+    }
+    if (idx !== -1) {
+      arr[idx] = '';
+    } else {
+      var emptyIdx = -1;
+      for (var j = 0; j < arr.length; j++) {
+        if (!arr[j] || !arr[j].trim()) { emptyIdx = j; break; }
+      }
+      if (emptyIdx === -1) emptyIdx = arr.length - 1;
+      arr[emptyIdx] = name;
+    }
+    render();
+  }
+
+  function setGame(id){
+    state.game = id;
+    state.stage = 'setup';
+    render();
+  }
+
+  function backToChooseGame(){
+    state.stage = 'chooseGame';
+    state.winner = null;
+    state.winnerLabel = null;
+    state.winnerSong = null;
+    render();
+  }
+
+  function makeEntity(name, type, startScore){
+    if (type === 'countdown') return { name: name, score: startScore, history: [] };
+    if (type === 'atc') return { name: name, target: 1, history: [] };
+    var marks = {};
+    CRICKET_NUMBERS.forEach(function(k){ marks[k] = 0; });
+    return { name: name, marks: marks, points: 0, history: [] };
+  }
+
+  function startGame(){
+    refreshRosterDatalist();
+    var game = currentGame();
+    var startScore = game.startScore || 0;
+    if (state.mode === 'ffa') {
+      addToRoster(state.names);
+      state.players = state.names.map(function(name){
+        return makeEntity(name || 'Player', game.type, startScore);
+      });
+      state.turnIndex = (state.firstIndex >= 0 && state.firstIndex < state.players.length) ? state.firstIndex : 0;
+    } else {
+      addToRoster(state.teamNames);
+      var teamA = makeEntity(null, game.type, startScore);
+      teamA.members = [state.teamNames[0] || 'Player 1', state.teamNames[1] || 'Player 2'];
+      var teamB = makeEntity(null, game.type, startScore);
+      teamB.members = [state.teamNames[2] || 'Player 3', state.teamNames[3] || 'Player 4'];
+      state.teams = [teamA, teamB];
+      state.turnIndex = (state.firstIndex === 1) ? 1 : 0;
+      state.turnMember = [0, 0];
+    }
+    state.cricketDartsThisTurn = 0;
+    state.winner = null;
+    state.winnerLabel = null;
+    state.winnerSong = null;
+    state.stage = 'playing';
+    render();
+  }
+
+  function recordResult(){
+    var game = currentGame();
+    var entry = { id: Date.now(), date: new Date().toISOString(), mode: state.mode, game: game.id, gameLabel: game.label, startScore: game.startScore || null };
+    var isCountdown = game.type === 'countdown';
+    if (state.mode === 'ffa') {
+      entry.participants = state.players.map(function(p){ return p.name; });
+      entry.winner = state.winner;
+      if (isCountdown) entry.throws = state.players.map(function(p){ return { who: p.name, log: p.history.slice() }; });
+    } else {
+      entry.participants = state.teams.map(function(t){ return t.members.slice(); });
+      entry.winner = state.winnerLabel;
+      entry.winnerMembers = state.winnerTeamMembers;
+      if (isCountdown) entry.throws = state.teams.map(function(t){ return { who: t.members.join(' & '), log: t.history.slice() }; });
+    }
+    addHistoryEntry(entry);
+  }
+
+  function activeEntities(){
+    return state.mode === 'ffa' ? state.players : state.teams;
+  }
+  function activeEntityLabel(entity){
+    return state.mode === 'ffa' ? entity.name : entity.members.join(' & ');
+  }
+  function winnerNamesFor(entity){
+    return state.mode === 'ffa' ? [entity.name] : entity.members.slice();
+  }
+
+  function declareWin(entity){
+    var names = winnerNamesFor(entity);
+    if (state.mode === 'ffa') {
+      state.winner = entity.name;
+    } else {
+      state.winnerTeamMembers = entity.members.slice();
+      state.winnerLabel = entity.members.join(' & ');
+    }
+    state.winnerSong = pickWinnerSong(names);
+    state.stage = 'finished';
+    recordResult();
+    render();
+  }
+
+  function advanceTurn(){
+    var entities = activeEntities();
+    if (state.mode === 'teams') {
+      state.turnMember[state.turnIndex] = (state.turnMember[state.turnIndex] + 1) % 2;
+    }
+    state.turnIndex = (state.turnIndex + 1) % entities.length;
+  }
+
+  function atcTargetLabel(target){
+    if (target <= 20) return String(target);
+    if (target === 21) return 'Bull';
+    return 'Finished';
+  }
+
+  function submitAtcHits(){
+    var input = document.getElementById('turn-score');
+    var val = parseInt(input.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 3) val = 3;
+    var entities = activeEntities();
+    var entity = entities[state.turnIndex];
+    var thrower = state.mode === 'ffa' ? entity.name : entity.members[state.turnMember[state.turnIndex]];
+    entity.target += val;
+    entity.history.push({ hits: val, target: entity.target, thrower: thrower });
+    if (entity.target > 21) {
+      declareWin(entity);
+      return;
+    }
+    advanceTurn();
+    render();
+  }
+
+  function activeCricketEntity(){
+    return activeEntities()[state.turnIndex];
+  }
+  function otherCricketEntities(){
+    var entities = activeEntities();
+    return entities.filter(function(e, i){ return i !== state.turnIndex; });
+  }
+  function cricketAllClosed(entity){
+    return CRICKET_NUMBERS.every(function(k){ return entity.marks[k] >= 3; });
+  }
+
+  function hitCricketNumber(key){
+    if (state.cricketDartsThisTurn >= 3) return;
+    var entity = activeCricketEntity();
+    var others = otherCricketEntities();
+    var value = CRICKET_VALUES[key];
+    var current = entity.marks[key];
+    var thrower = state.mode === 'ffa' ? entity.name : entity.members[state.turnMember[state.turnIndex]];
+    var scored = false;
+    if (current >= 3) {
+      var openElsewhere = others.some(function(o){ return o.marks[key] < 3; });
+      if (openElsewhere) {
+        entity.points += value;
+        scored = true;
+      }
+    }
+    entity.marks[key] = current + 1;
+    entity.history.push({ key: key, scored: scored, thrower: thrower });
+    state.cricketDartsThisTurn += 1;
+
+    if (cricketAllClosed(entity)) {
+      var maxOther = others.reduce(function(m, o){ return Math.max(m, o.points); }, 0);
+      if (entity.points >= maxOther) {
+        declareWin(entity);
+        return;
+      }
+    }
+    if (state.cricketDartsThisTurn >= 3) {
+      state.cricketDartsThisTurn = 0;
+      advanceTurn();
+    }
+    render();
+  }
+
+  function endCricketTurn(){
+    state.cricketDartsThisTurn = 0;
+    advanceTurn();
+    render();
+  }
+
+  function submitScoreFFA(){
+    var input = document.getElementById('turn-score');
+    var val = parseInt(input.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 180) val = 180;
+    var p = state.players[state.turnIndex];
+    var remaining = p.score - val;
+    var bust = remaining < 0;
+    if (!bust) {
+      p.score = remaining;
+      p.history.push({ score: val, remaining: remaining, bust: false });
+      maybePlaySnippet(p.name, val, remaining);
+      if (remaining === 0) {
+        declareWin(p);
+        return;
+      }
+    } else {
+      p.history.push({ score: val, remaining: p.score, bust: true });
+    }
+    state.turnIndex = (state.turnIndex + 1) % state.players.length;
+    render();
+  }
+
+  function submitScoreTeams(){
+    var input = document.getElementById('turn-score');
+    var val = parseInt(input.value, 10);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 180) val = 180;
+    var t = state.teams[state.turnIndex];
+    var remaining = t.score - val;
+    var bust = remaining < 0;
+    var thrower = t.members[state.turnMember[state.turnIndex]];
+    if (!bust) {
+      t.score = remaining;
+      t.history.push({ score: val, remaining: remaining, bust: false, thrower: thrower });
+      maybePlaySnippet(thrower, val, remaining);
+      if (remaining === 0) {
+        declareWin(t);
+        return;
+      }
+    } else {
+      t.history.push({ score: val, remaining: t.score, bust: true, thrower: thrower });
+    }
+    state.turnMember[state.turnIndex] = (state.turnMember[state.turnIndex] + 1) % 2;
+    state.turnIndex = (state.turnIndex + 1) % state.teams.length;
+    render();
+  }
+
+  function submitScore(){
+    var type = currentGameType();
+    if (type === 'atc') { submitAtcHits(); return; }
+    if (type === 'cricket') return;
+    if (state.mode === 'ffa') submitScoreFFA();
+    else submitScoreTeams();
+  }
+
+  function resetGame(){
+    state.stage = 'setup';
+    state.players = [];
+    state.teams = [];
+    state.winner = null;
+    state.winnerLabel = null;
+    state.winnerSong = null;
+    render();
+  }
+
+  function playAgain(){
+    if (state.mode === 'ffa') {
+      var idx = state.players.findIndex(function(p){ return p.name === state.winner; });
+      state.firstIndex = idx !== -1 ? idx : 0;
+    } else {
+      var idx2 = state.teams.findIndex(function(t){ return t.members.join(' & ') === state.winnerLabel; });
+      state.firstIndex = idx2 !== -1 ? idx2 : 0;
+    }
+    resetGame();
+  }
+
+  function gameDescription(id){
+    if (id === '200') return 'Countdown from 200. 50+ throws play a snippet.';
+    if (id === '501') return 'The standard tournament countdown.';
+    if (id === '301') return 'A shorter countdown race.';
+    if (id === '170') return 'The classic highest possible checkout.';
+    if (id === 'atc') return 'Hit 1 through 20, then the bull, in order.';
+    if (id === 'cricket') return 'Close 20 down to 15 and the bull before your opponents.';
+    return '';
+  }
+
+  function renderChooseGame(){
+    var app = document.getElementById('app');
+    var cards = GAMES.map(function(g){
+      return '<button type="button" class="game-card" data-game="' + g.id + '">' +
+        '<span class="game-card-title">' + g.label + '</span>' +
+        '<span class="game-card-desc">' + gameDescription(g.id) + '</span>' +
+      '</button>';
+    }).join('');
+    app.innerHTML =
+      '<div class="choose-game-panel">' +
+        '<p class="label" style="margin-top:0;">Choose a game</p>' +
+        '<div class="game-grid">' + cards + '</div>' +
+      '</div>';
+    document.querySelectorAll('.game-card').forEach(function(b){
+      b.addEventListener('click', function(){ setGame(b.dataset.game); });
+    });
+  }
+
+  function renderPlaySetup(){
+    var app = document.getElementById('app');
+    refreshRosterDatalist();
+
+    var gameHeaderHtml =
+      '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">' +
+        '<p class="label" style="margin:0;">Game: <span style="color:var(--text); font-weight:500;">' + currentGame().label + '</span></p>' +
+        '<button type="button" id="change-game-btn" style="font-size:13px; padding:6px 12px;">Change game</button>' +
+      '</div>';
+
+    var modeHtml =
+      '<div class="mode-row" id="mode-row">' +
+        '<button data-mode="ffa" class="' + (state.mode === 'ffa' ? 'active' : '') + '">Free for all</button>' +
+        '<button data-mode="teams" class="' + (state.mode === 'teams' ? 'active' : '') + '">2v2 teams</button>' +
+      '</div>';
+
+    var body = '';
+    if (state.mode === 'ffa') {
+      var countButtons = '';
+      for (var n = 2; n <= 8; n++) {
+        countButtons += '<button data-n="' + n + '" class="' + (state.count === n ? 'active' : '') + '">' + n + '</button>';
+      }
+      var nameInputs = '';
+      for (var i = 0; i < state.count; i++) {
+        var v = (state.names[i] || '').replace(/"/g, '&quot;');
+        nameInputs += '<input type="text" list="roster-list" data-i="' + i + '" value="' + v + '" placeholder="Player ' + (i + 1) + '" />';
+      }
+      body =
+        '<p class="label">Number of players</p>' +
+        '<div class="count-row" id="count-row">' + countButtons + '</div>' +
+        '<p class="label">Player names</p>' +
+        '<div id="name-list">' + nameInputs + '</div>';
+    } else {
+      var t = ['a', 'a', 'b', 'b'];
+      var labels = ['Team A &middot; player 1', 'Team A &middot; player 2', 'Team B &middot; player 1', 'Team B &middot; player 2'];
+      var blocks = '';
+      for (var j = 0; j < 4; j += 2) {
+        var team = j === 0 ? 'a' : 'b';
+        var v1 = (state.teamNames[j] || '').replace(/"/g, '&quot;');
+        var v2 = (state.teamNames[j + 1] || '').replace(/"/g, '&quot;');
+        blocks +=
+          '<div class="team-block ' + team + '">' +
+            '<p class="team-label">Team ' + (team === 'a' ? 'A' : 'B') + '</p>' +
+            '<input type="text" list="roster-list" data-i="' + j + '" value="' + v1 + '" placeholder="Player ' + (j + 1) + '" />' +
+            '<input type="text" list="roster-list" data-i="' + (j + 1) + '" value="' + v2 + '" placeholder="Player ' + (j + 2) + '" />' +
+          '</div>';
+      }
+      body = '<p class="label">Teams</p>' + blocks;
+    }
+
+    var activeArr = state.mode === 'ffa' ? state.names : state.teamNames;
+    var roster = loadRoster();
+    var chipsHtml = '';
+    if (roster.length) {
+      var chips = roster.map(function(n){
+        var isUsed = activeArr.some(function(v){ return (v || '').trim().toLowerCase() === n.toLowerCase(); });
+        var safe = n.replace(/"/g, '&quot;');
+        return '<div class="chip-wrap">' +
+          '<button type="button" class="chip ' + (isUsed ? 'used' : '') + '" data-name="' + safe + '">' + n + (isUsed ? ' <i class="chip-check">&check;</i>' : '') + '</button>' +
+          '<button type="button" class="chip-settings" data-name="' + safe + '" aria-label="Edit ' + safe + '">&#9881;</button>' +
+        '</div>';
+      }).join('');
+      chipsHtml =
+        '<p class="label" style="margin-top:16px;">Saved players &middot; tap to add</p>' +
+        '<div class="chip-row" id="chip-row">' + chips + '</div>';
+
+      if (state.editingPlayer) {
+        var editSafe = state.editingPlayer.replace(/"/g, '&quot;');
+        var profile = getProfile(state.editingPlayer);
+        var artistSafe = (profile.artist || '').replace(/"/g, '&quot;');
+        var songMode = state.editSongMode;
+
+        var modeToggleHtml =
+          '<div class="mode-row" id="song-mode-row" style="margin-bottom:10px;">' +
+            '<button type="button" data-song-mode="tracks" class="' + (songMode === 'tracks' ? 'active' : '') + '">5 songs</button>' +
+            '<button type="button" data-song-mode="artist" class="' + (songMode === 'artist' ? 'active' : '') + '">Artist link</button>' +
+          '</div>';
+
+        var songFieldsHtml = '';
+        if (songMode === 'artist') {
+          var artistInputs = '';
+          for (var ai = 0; ai < 5; ai++) {
+            var artistVal = (profile.artistUris && profile.artistUris[ai]) ? ('https://open.spotify.com/artist/' + profile.artistUris[ai]) : '';
+            artistInputs += '<div class="linked-input-row">' +
+              '<input type="text" class="artist-input" data-ai="' + ai + '" value="' + artistVal.replace(/"/g, '&quot;') + '" placeholder="Spotify artist link ' + (ai + 1) + '" />' +
+              '<button type="button" class="search-spotify-btn" data-target-class="artist-input" data-target-i="' + ai + '" aria-label="Search Spotify">&#128269;</button>' +
+            '</div>';
+          }
+          songFieldsHtml =
+            '<p class="label">Artist links &middot; up to 5, randomly picks one, plays their top track</p>' +
+            artistInputs;
+        } else {
+          var songInputs = '';
+          for (var si = 0; si < 5; si++) {
+            var songVal = (profile.songs && profile.songs[si]) ? profile.songs[si] : '';
+            songInputs += '<div class="linked-input-row">' +
+              '<input type="text" class="song-input" data-si="' + si + '" value="' + songVal.replace(/"/g, '&quot;') + '" placeholder="Spotify track link ' + (si + 1) + '" />' +
+              '<button type="button" class="search-spotify-btn" data-target-class="song-input" data-target-i="' + si + '" aria-label="Search Spotify">&#128269;</button>' +
+            '</div>';
+          }
+          songFieldsHtml =
+            '<p class="label">Win songs &middot; paste Spotify track links, up to 5</p>' +
+            songInputs;
+        }
+
+        chipsHtml +=
+          '<div class="edit-panel" id="edit-panel">' +
+            '<p class="label" style="margin-top:0;">Edit player</p>' +
+            '<div class="photo-row">' +
+              '<div id="edit-photo-preview-wrap">' + avatarHtml(profile.photo, state.editingPlayer) + '</div>' +
+              '<div class="photo-row-actions">' +
+                '<button type="button" id="edit-photo-upload-btn">Upload photo</button>' +
+                '<button type="button" id="edit-photo-remove-btn" class="btn-danger">Remove photo</button>' +
+              '</div>' +
+              '<input type="file" id="edit-photo-file-input" accept="image/*" style="display:none;" />' +
+            '</div>' +
+            '<input type="text" id="edit-name-input" value="' + editSafe + '" placeholder="Name" style="margin-bottom:10px;" />' +
+            '<input type="text" id="edit-artist-input" value="' + artistSafe + '" placeholder="Favorite artist (optional)" style="margin-bottom:10px;" />' +
+            modeToggleHtml +
+            songFieldsHtml +
+            '<div style="display:flex; gap:8px; margin-top:4px;">' +
+              '<button type="button" class="btn-primary" id="edit-save-btn" style="flex:1;">Save</button>' +
+              '<button type="button" class="btn-danger" id="edit-delete-btn" style="flex:1;">Delete</button>' +
+              '<button type="button" id="edit-cancel-btn" style="flex:1;">Cancel</button>' +
+            '</div>' +
+          '</div>';
+      }
+    }
+
+    var firstHtml = '';
+    if (state.mode === 'ffa') {
+      var firstButtons = '';
+      for (var fi = 0; fi < state.count; fi++) {
+        var fname = (state.names[fi] || '').trim() || ('Player ' + (fi + 1));
+        firstButtons += '<button type="button" data-fi="' + fi + '" class="' + (state.firstIndex === fi ? 'active' : '') + '">' + fname + '</button>';
+      }
+      firstHtml =
+        '<p class="label" style="margin-top:16px;">Who goes first?</p>' +
+        '<div class="mode-row" id="first-row" style="flex-wrap:wrap;">' + firstButtons + '</div>';
+    } else {
+      var teamALabel = ((state.teamNames[0] || '').trim() || 'Player 1') + ' &amp; ' + ((state.teamNames[1] || '').trim() || 'Player 2');
+      var teamBLabel = ((state.teamNames[2] || '').trim() || 'Player 3') + ' &amp; ' + ((state.teamNames[3] || '').trim() || 'Player 4');
+      firstHtml =
+        '<p class="label" style="margin-top:16px;">Who goes first?</p>' +
+        '<div class="mode-row" id="first-row">' +
+          '<button type="button" data-fi="0" class="' + (state.firstIndex === 0 ? 'active' : '') + '">Team A: ' + teamALabel + '</button>' +
+          '<button type="button" data-fi="1" class="' + (state.firstIndex === 1 ? 'active' : '') + '">Team B: ' + teamBLabel + '</button>' +
+        '</div>';
+    }
+
+    app.innerHTML =
+      gameHeaderHtml + modeHtml + body + chipsHtml + firstHtml +
+      '<button class="btn-primary" id="start-btn" style="width:100%; margin-top:16px;">Start game</button>';
+
+    document.getElementById('change-game-btn').addEventListener('click', backToChooseGame);
+
+    document.querySelectorAll('#first-row button').forEach(function(b){
+      b.addEventListener('click', function(){ setFirstIndex(parseInt(b.dataset.fi, 10)); });
+    });
+
+    document.querySelectorAll('#mode-row button').forEach(function(b){
+      b.addEventListener('click', function(){ setMode(b.dataset.mode); });
+    });
+    var countRow = document.getElementById('count-row');
+    if (countRow) {
+      countRow.querySelectorAll('button').forEach(function(b){
+        b.addEventListener('click', function(){ setCount(parseInt(b.dataset.n, 10)); });
+      });
+    }
+    document.querySelectorAll('#name-list input').forEach(function(inp){
+      inp.addEventListener('input', function(){ updateName(parseInt(inp.dataset.i, 10), inp.value); });
+    });
+    document.querySelectorAll('.team-block input').forEach(function(inp){
+      inp.addEventListener('input', function(){ updateTeamName(parseInt(inp.dataset.i, 10), inp.value); });
+    });
+    var chipRow = document.getElementById('chip-row');
+    if (chipRow) {
+      chipRow.querySelectorAll('.chip').forEach(function(c){
+        c.addEventListener('click', function(){ toggleChip(c.dataset.name); });
+      });
+      chipRow.querySelectorAll('.chip-settings').forEach(function(c){
+        c.addEventListener('click', function(){ toggleEditPlayer(c.dataset.name); });
+      });
+    }
+    var editPanel = document.getElementById('edit-panel');
+    if (editPanel) {
+      var songModeRow = document.getElementById('song-mode-row');
+      if (songModeRow) {
+        songModeRow.querySelectorAll('button').forEach(function(b){
+          b.addEventListener('click', function(){ setEditSongMode(b.dataset.songMode); });
+        });
+      }
+      editPanel.querySelectorAll('.search-spotify-btn').forEach(function(b){
+        b.addEventListener('click', function(){
+          var cls = b.dataset.targetClass;
+          var idx = b.dataset.targetI;
+          var attr = cls === 'artist-input' ? 'data-ai' : 'data-si';
+          var input = editPanel.querySelector('.' + cls + '[' + attr + '="' + idx + '"]');
+          var query = input ? input.value.trim() : '';
+          if (!query || parseSpotifyArtistId(query) || parseSpotifyTrackId(query)) {
+            query = document.getElementById('edit-artist-input').value.trim() || query;
+          }
+          if (!query) return;
+          window.open('https://open.spotify.com/search/' + encodeURIComponent(query), '_blank', 'noopener');
+        });
+      });
+      var editPhotoInput = document.getElementById('edit-photo-file-input');
+      document.getElementById('edit-photo-upload-btn').addEventListener('click', function(){
+        editPhotoInput.click();
+      });
+      editPhotoInput.addEventListener('change', function(e){
+        var file = e.target.files[0];
+        if (!file) return;
+        resizeImageToDataUrl(file, 160, function(dataUrl){
+          if (!dataUrl) return;
+          state.pendingPhoto = dataUrl;
+          var nameNow = document.getElementById('edit-name-input').value || state.editingPlayer;
+          document.getElementById('edit-photo-preview-wrap').innerHTML = avatarHtml(dataUrl, nameNow);
+        });
+        e.target.value = '';
+      });
+      document.getElementById('edit-photo-remove-btn').addEventListener('click', function(){
+        state.pendingPhoto = null;
+        var nameNow = document.getElementById('edit-name-input').value || state.editingPlayer;
+        document.getElementById('edit-photo-preview-wrap').innerHTML = avatarHtml(null, nameNow);
+      });
+      document.getElementById('edit-save-btn').addEventListener('click', function(){
+        var oldName = state.editingPlayer;
+        var newNameRaw = document.getElementById('edit-name-input').value;
+        var newName = (newNameRaw || '').trim() || oldName;
+        if (newName.toLowerCase() !== oldName.toLowerCase()) {
+          renameRosterPlayer(oldName, newName);
+        }
+        var artist = document.getElementById('edit-artist-input').value.trim();
+        var existingProfile = getProfile(oldName);
+        var profileToSave = {
+          artist: artist,
+          songs: [],
+          artistUris: [],
+          photo: (state.pendingPhoto === undefined) ? (existingProfile.photo || null) : state.pendingPhoto
+        };
+        if (state.editSongMode === 'artist') {
+          var artistUris = [];
+          document.querySelectorAll('.artist-input').forEach(function(inp){
+            var id = parseSpotifyArtistId(inp.value);
+            if (id && artistUris.indexOf(id) === -1) artistUris.push(id);
+          });
+          profileToSave.artistUris = artistUris.slice(0, 5);
+        } else {
+          var songs = [];
+          document.querySelectorAll('.song-input').forEach(function(inp){
+            var id = parseSpotifyTrackId(inp.value);
+            if (id && songs.indexOf(id) === -1) songs.push(id);
+          });
+          profileToSave.songs = songs.slice(0, 5);
+        }
+        saveProfile(newName, profileToSave);
+        closeEditPlayer();
+      });
+      document.getElementById('edit-delete-btn').addEventListener('click', function(){
+        if (window.confirm('Remove ' + state.editingPlayer + ' from saved players? Their past game history and stats will be kept.')) {
+          deleteRosterPlayer(state.editingPlayer);
+          closeEditPlayer();
+        }
+      });
+      document.getElementById('edit-cancel-btn').addEventListener('click', closeEditPlayer);
+    }
+    document.getElementById('start-btn').addEventListener('click', startGame);
+  }
+
+  function renderPlaying(){
+    var type = currentGameType();
+    if (type === 'atc') { renderAtcPlaying(); return; }
+    if (type === 'cricket') { renderCricketPlaying(); return; }
+    renderCountdownPlaying();
+  }
+
+  function renderCountdownPlaying(){
+    var app = document.getElementById('app');
+
+    if (state.mode === 'ffa') {
+      var cards = state.players.map(function(p, i){
+        var active = i === state.turnIndex;
+        return '<div class="player-card ' + (active ? 'active' : '') + '">' +
+          '<p class="pname">' + p.name + '</p>' +
+          '<p class="pscore">' + p.score + '</p>' +
+        '</div>';
+      }).join('');
+      var histRows = state.players[state.turnIndex].history.slice(-6).reverse().map(function(h){
+        return '<tr><td class="' + (h.bust ? 'bust' : '') + '">' + (h.bust ? 'Bust' : h.score) + '</td><td>' + h.remaining + '</td></tr>';
+      }).join('');
+      var turnLabel = state.players[state.turnIndex].name + '&rsquo;s turn';
+      var turnAvatar = avatarHtml(getProfile(state.players[state.turnIndex].name).photo, state.players[state.turnIndex].name);
+
+      app.innerHTML =
+        '<div class="card-grid">' + cards + '</div>' +
+        '<div class="turn-row">' + turnAvatar + '<p>' + turnLabel + '</p></div>' +
+        '<div class="entry-row">' +
+          '<input id="turn-score" type="number" min="0" max="180" placeholder="Score thrown this turn" />' +
+          '<button class="btn-primary" id="submit-btn">Add</button>' +
+        '</div>' +
+        '<table><thead><tr><th>Thrown</th><th>Left</th></tr></thead><tbody>' +
+        (histRows || '<tr><td colspan="2" style="color:var(--text-muted);">No throws yet</td></tr>') +
+        '</tbody></table>' +
+        '<button class="reset-btn" id="reset-btn">Reset game</button>';
+    } else {
+      var cards2 = state.teams.map(function(t, i){
+        var active = i === state.turnIndex;
+        return '<div class="player-card ' + (active ? 'active' : '') + '">' +
+          '<p class="pname">' + t.members.join(' &amp; ') + '</p>' +
+          '<p class="pscore">' + t.score + '</p>' +
+        '</div>';
+      }).join('');
+      var activeTeam = state.teams[state.turnIndex];
+      var thrower = activeTeam.members[state.turnMember[state.turnIndex]];
+      var histRows2 = activeTeam.history.slice(-6).reverse().map(function(h){
+        return '<tr><td class="' + (h.bust ? 'bust' : '') + '">' + (h.bust ? 'Bust' : h.score) + ' &ndash; ' + h.thrower + '</td><td>' + h.remaining + '</td></tr>';
+      }).join('');
+
+      app.innerHTML =
+        '<div class="card-grid">' + cards2 + '</div>' +
+        '<div class="turn-row">' + avatarHtml(getProfile(thrower).photo, thrower) + '<p>' + thrower + '&rsquo;s turn</p></div>' +
+        '<div class="entry-row">' +
+          '<input id="turn-score" type="number" min="0" max="180" placeholder="Score thrown this turn" />' +
+          '<button class="btn-primary" id="submit-btn">Add</button>' +
+        '</div>' +
+        '<table><thead><tr><th>Thrown</th><th>Left</th></tr></thead><tbody>' +
+        (histRows2 || '<tr><td colspan="2" style="color:var(--text-muted);">No throws yet</td></tr>') +
+        '</tbody></table>' +
+        '<button class="reset-btn" id="reset-btn">Reset game</button>';
+    }
+
+    var scoreInput = document.getElementById('turn-score');
+    document.getElementById('submit-btn').addEventListener('click', submitScore);
+    scoreInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') submitScore(); });
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+    scoreInput.focus();
+  }
+
+  function renderAtcPlaying(){
+    var app = document.getElementById('app');
+    var entities = activeEntities();
+    var cards = entities.map(function(e, i){
+      var active = i === state.turnIndex;
+      return '<div class="player-card ' + (active ? 'active' : '') + '">' +
+        '<p class="pname">' + activeEntityLabel(e) + '</p>' +
+        '<p class="pscore">' + atcTargetLabel(e.target) + '</p>' +
+      '</div>';
+    }).join('');
+    var entity = entities[state.turnIndex];
+    var thrower = state.mode === 'ffa' ? entity.name : entity.members[state.turnMember[state.turnIndex]];
+    var histRows = entity.history.slice(-6).reverse().map(function(h){
+      return '<tr><td>' + h.hits + ' hit' + (h.hits === 1 ? '' : 's') + '</td><td>' + atcTargetLabel(h.target) + '</td></tr>';
+    }).join('');
+
+    app.innerHTML =
+      '<div class="card-grid">' + cards + '</div>' +
+      '<div class="turn-row">' + avatarHtml(getProfile(thrower).photo, thrower) + '<p>' + thrower + '&rsquo;s turn &middot; aiming for ' + atcTargetLabel(entity.target) + '</p></div>' +
+      '<div class="entry-row">' +
+        '<input id="turn-score" type="number" min="0" max="3" placeholder="Hits this turn (0-3)" />' +
+        '<button class="btn-primary" id="submit-btn">Add</button>' +
+      '</div>' +
+      '<table><thead><tr><th>Hits</th><th>New target</th></tr></thead><tbody>' +
+      (histRows || '<tr><td colspan="2" style="color:var(--text-muted);">No throws yet</td></tr>') +
+      '</tbody></table>' +
+      '<button class="reset-btn" id="reset-btn">Reset game</button>';
+
+    var scoreInput = document.getElementById('turn-score');
+    document.getElementById('submit-btn').addEventListener('click', submitScore);
+    scoreInput.addEventListener('keydown', function(e){ if (e.key === 'Enter') submitScore(); });
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+    scoreInput.focus();
+  }
+
+  function cricketMarkDisplay(marks){
+    if (marks >= 3) return '&#10003;&#10003;&#10003;';
+    var out = '';
+    for (var i = 0; i < 3; i++) out += (i < marks) ? '&#9679;' : '&#9675;';
+    return out;
+  }
+
+  function renderCricketPlaying(){
+    var app = document.getElementById('app');
+    var entities = activeEntities();
+    var entity = entities[state.turnIndex];
+    var thrower = state.mode === 'ffa' ? entity.name : entity.members[state.turnMember[state.turnIndex]];
+
+    var headerCells = entities.map(function(e){ return '<th>' + activeEntityLabel(e) + '</th>'; }).join('');
+    var numberRows = CRICKET_NUMBERS.map(function(k){
+      var cells = entities.map(function(e){
+        return '<td class="cricket-mark">' + cricketMarkDisplay(e.marks[k]) + '</td>';
+      }).join('');
+      return '<tr><td class="cricket-label">' + (k === 'B' ? 'Bull' : k) + '</td>' + cells + '</tr>';
+    }).join('');
+    var pointsRow = '<tr><td class="cricket-label">Points</td>' + entities.map(function(e){
+      return '<td class="cricket-mark" style="font-weight:500;">' + e.points + '</td>';
+    }).join('') + '</tr>';
+
+    var targetButtons = CRICKET_NUMBERS.map(function(k){
+      var closedForActive = entity.marks[k] >= 3;
+      var closedForAll = entities.every(function(e){ return e.marks[k] >= 3; });
+      var label = (k === 'B' ? 'Bull' : k) + (closedForActive ? ' &#10003;' : '');
+      return '<button type="button" class="cricket-target ' + (closedForAll ? 'dead' : '') + '" data-key="' + k + '">' + label + '</button>';
+    }).join('');
+
+    app.innerHTML =
+      '<div class="table-scroll"><table class="cricket-table"><thead><tr><th></th>' + headerCells + '</tr></thead>' +
+      '<tbody>' + numberRows + pointsRow + '</tbody></table></div>' +
+      '<div class="turn-row">' + avatarHtml(getProfile(thrower).photo, thrower) + '<p>' + thrower + '&rsquo;s turn &middot; dart ' + (state.cricketDartsThisTurn + 1) + ' of 3</p></div>' +
+      '<div class="cricket-target-grid" id="cricket-target-grid">' + targetButtons + '</div>' +
+      '<button id="end-turn-btn" style="width:100%; margin-top:12px;">End turn</button>' +
+      '<button class="reset-btn" id="reset-btn">Reset game</button>';
+
+    document.querySelectorAll('.cricket-target').forEach(function(b){
+      b.addEventListener('click', function(){ hitCricketNumber(b.dataset.key); });
+    });
+    document.getElementById('end-turn-btn').addEventListener('click', endCricketTurn);
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+  }
+
+  function launchFireworks(canvas){
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width = canvas.clientWidth;
+    var h = canvas.height = canvas.clientHeight;
+    var colors = ['#5b8cff', '#e08a4f', '#4fce8a', '#e05a5a', '#f0c94f', '#c56be0'];
+    var particles = [];
+
+    function spawnBurst(){
+      var cx = w * (0.2 + Math.random() * 0.6);
+      var cy = h * (0.15 + Math.random() * 0.4);
+      var color = colors[Math.floor(Math.random() * colors.length)];
+      var count = 26;
+      for (var i = 0; i < count; i++) {
+        var angle = (Math.PI * 2 * i) / count;
+        var speed = 1.6 + Math.random() * 2.2;
+        particles.push({
+          x: cx, y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          alpha: 1,
+          color: color
+        });
+      }
+    }
+
+    var bursts = 0;
+    var maxBursts = 5;
+    spawnBurst();
+    bursts++;
+    var burstTimer = setInterval(function(){
+      spawnBurst();
+      bursts++;
+      if (bursts >= maxBursts) clearInterval(burstTimer);
+    }, 450);
+
+    var stopped = false;
+    function tick(){
+      if (stopped) return;
+      ctx.clearRect(0, 0, w, h);
+      particles.forEach(function(p){
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.035;
+        p.alpha -= 0.012;
+      });
+      particles = particles.filter(function(p){ return p.alpha > 0; });
+      particles.forEach(function(p){
+        ctx.globalAlpha = Math.max(p.alpha, 0);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      if (bursts < maxBursts || particles.length > 0) {
+        requestAnimationFrame(tick);
+      } else {
+        ctx.clearRect(0, 0, w, h);
+      }
+    }
+    tick();
+  }
+
+  function showSnippet(name, uri){
+    var zone = document.getElementById('snippet-zone');
+    if (!zone) return;
+    zone.innerHTML =
+      '<div class="snippet-box">' +
+        '<p class="label" style="margin:0 0 6px;">' + name + '&rsquo;s 50+ snippet</p>' +
+        '<div id="snippet-embed"></div>' +
+      '</div>';
+    playSpotifySong('snippet-embed', { uri: uri, name: null }, 10000);
+    clearTimeout(window.__snippetClearTimer);
+    window.__snippetClearTimer = setTimeout(function(){
+      var z = document.getElementById('snippet-zone');
+      if (z) z.innerHTML = '';
+    }, 10600);
+  }
+
+  function maybePlaySnippet(name, val, remaining){
+    if (state.game !== '200') return;
+    if (val <= 50 || remaining === 0) return;
+    var profile = getProfile(name);
+    if (!profileHasAudio(profile)) return;
+    var uri = pickProfileEmbedUri(profile);
+    if (!uri) return;
+    showSnippet(name, uri);
+  }
+
+  function pickWinnerSong(candidates){
+    var withAudio = candidates.filter(function(n){
+      return profileHasAudio(getProfile(n));
+    });
+    if (withAudio.length === 0) return null;
+    var chosenName = withAudio[Math.floor(Math.random() * withAudio.length)];
+    var profile = getProfile(chosenName);
+    var uri = pickProfileEmbedUri(profile);
+    if (!uri) return null;
+    return { name: chosenName, artist: profile.artist, uri: uri };
+  }
+
+  function renderFinished(){
+    var app = document.getElementById('app');
+    var label = state.mode === 'ffa' ? state.winner : state.winnerLabel;
+    var song = state.winnerSong;
+    var game = currentGame();
+    var subLabel;
+    if (game.type === 'countdown') subLabel = 'Checked out from ' + game.startScore;
+    else if (game.type === 'atc') subLabel = 'Finished around the clock';
+    else subLabel = 'Closed out the board';
+    var songHtml = '';
+    if (song) {
+      songHtml =
+        '<p class="label" style="text-align:center; margin-top:16px;">' + song.name + '&rsquo;s song' + (song.artist ? ' &middot; ' + song.artist : '') + '</p>' +
+        '<div id="win-song-embed"></div>';
+    }
+    app.innerHTML =
+      '<div class="finish-wrap" style="position:relative;">' +
+        '<canvas id="fireworks-canvas" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>' +
+        '<div style="position:relative; z-index:1;">' +
+          '<div class="trophy">🏆</div>' +
+          '<p class="winner-name">' + label + ' wins</p>' +
+          '<p class="winner-sub">' + subLabel + '</p>' +
+          songHtml +
+          '<div style="display:flex; gap:8px; margin-top:20px;">' +
+            '<button class="btn-primary reset-btn" id="play-again-btn" style="flex:1; margin-top:0;">Play again</button>' +
+            '<button class="reset-btn" id="main-menu-btn" style="flex:1; margin-top:0;">Main menu</button>' +
+            '<button class="reset-btn" id="players-btn-finish" style="flex:1; margin-top:0;">Players</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.getElementById('play-again-btn').addEventListener('click', playAgain);
+    document.getElementById('main-menu-btn').addEventListener('click', backToChooseGame);
+    document.getElementById('players-btn-finish').addEventListener('click', togglePlayersPanel);
+    if (song) {
+      playSpotifySong('win-song-embed', song, 60000);
+    }
+    var fwCanvas = document.getElementById('fireworks-canvas');
+    if (fwCanvas) launchFireworks(fwCanvas);
+  }
+
+  function renderPlayTab(){
+    if (state.stage === 'chooseGame') renderChooseGame();
+    else if (state.stage === 'setup') renderPlaySetup();
+    else if (state.stage === 'playing') renderPlaying();
+    else renderFinished();
+  }
+
+  function formatDate(iso){
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' +
+      d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  function managePlayersHtml(){
+    var roster = loadRoster();
+    if (!roster.length) return '';
+    var chips = roster.map(function(n){
+      var safe = n.replace(/"/g, '&quot;');
+      return '<div class="chip-wrap">' +
+        '<span class="chip" style="cursor:default;">' + n + '</span>' +
+        '<button type="button" class="chip-settings purge-player-btn" data-name="' + safe + '" aria-label="Clear stats for ' + safe + '">&#10005;</button>' +
+      '</div>';
+    }).join('');
+    return '<p class="section-heading" style="margin-top:0;">Clear player stats</p><div class="chip-row">' + chips + '</div>';
+  }
+
+  function wireManagePlayers(){
+    document.querySelectorAll('.purge-player-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var name = b.dataset.name;
+        if (window.confirm('Clear all games and stats for ' + name + '? They\u2019ll stay in your saved players list \u2014 this only removes their games from history, which also removes those games from any other players\u2019 stats. This cannot be undone.')) {
+          clearPlayerFromHistory(name);
+          render();
+        }
+      });
+    });
+  }
+
+  function renderHistoryTab(containerId){
+    var app = document.getElementById(containerId || 'app');
+    var hist = loadHistory().slice().reverse();
+    var manageHtml = managePlayersHtml();
+    if (hist.length === 0) {
+      app.innerHTML = manageHtml + '<div class="empty-state">No games played yet. Finish a game to see it here.</div>';
+      wireManagePlayers();
+      return;
+    }
+    var items = hist.map(function(g){
+      var participantsLabel;
+      if (g.mode === 'ffa') {
+        participantsLabel = g.participants.join(', ');
+      } else {
+        participantsLabel = g.participants.map(function(team){ return team.join(' & '); }).join('  vs  ');
+      }
+      var gameLabel = g.gameLabel || (g.startScore ? ('Countdown from ' + g.startScore) : 'Game');
+      var modeLabel = g.mode === 'ffa' ? 'Free for all' : '2v2 teams';
+      return '<div class="history-item">' +
+        '<div class="hi-top">' +
+          '<span class="hi-date">' + formatDate(g.date) + '</span>' +
+          '<span style="display:flex; align-items:center; gap:6px;">' +
+            '<span class="hi-mode">' + gameLabel + ' &middot; ' + modeLabel + '</span>' +
+            '<button type="button" class="chip-settings delete-game-btn" data-id="' + g.id + '" aria-label="Delete this game">&#10005;</button>' +
+          '</span>' +
+        '</div>' +
+        '<div class="hi-winner">Winner: <b>' + g.winner + '</b></div>' +
+        '<div class="hi-participants">' + participantsLabel + '</div>' +
+      '</div>';
+    }).join('');
+    app.innerHTML = manageHtml + items + '<button class="btn-danger clear-btn" id="clear-history-btn">Clear history</button>';
+    wireManagePlayers();
+    document.querySelectorAll('.delete-game-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        if (window.confirm('Delete this game from history? This cannot be undone.')) {
+          var id = parseInt(b.dataset.id, 10);
+          var h = loadHistory().filter(function(g){ return g.id !== id; });
+          saveHistory(h);
+          render();
+        }
+      });
+    });
+    document.getElementById('clear-history-btn').addEventListener('click', function(){
+      if (window.confirm('Clear all game history? This cannot be undone.')) {
+        saveHistory([]);
+        render();
+      }
+    });
+  }
+
+  function computeOverviewStats(hist){
+    var totalGames = hist.length;
+    var totalBusts = 0;
+    var highestThrowEver = 0;
+    var highestThrowName = null;
+    var perGameHighs = [];
+
+    hist.forEach(function(g){
+      var gameHighest = 0;
+      (g.throws || []).forEach(function(entry){
+        (entry.log || []).forEach(function(t){
+          if (t.bust) {
+            totalBusts += 1;
+          } else if (typeof t.score === 'number') {
+            if (t.score > highestThrowEver) {
+              highestThrowEver = t.score;
+              highestThrowName = g.mode === 'ffa' ? entry.who : t.thrower;
+            }
+            if (t.score > gameHighest) gameHighest = t.score;
+          }
+        });
+      });
+      perGameHighs.push(gameHighest);
+    });
+
+    var avgBustsPerGame = totalGames ? (totalBusts / totalGames) : 0;
+    var avgHighestPerGame = perGameHighs.length ? (perGameHighs.reduce(function(a, b){ return a + b; }, 0) / perGameHighs.length) : 0;
+
+    return {
+      totalGames: totalGames,
+      totalBusts: totalBusts,
+      avgBustsPerGame: avgBustsPerGame,
+      highestThrowEver: highestThrowEver,
+      highestThrowName: highestThrowName,
+      avgHighestPerGame: avgHighestPerGame
+    };
+  }
+
+  function computeIndividualStats(hist){
+    var map = {};
+    function ensure(name){
+      if (!map[name]) map[name] = { name: name, games: 0, wins: 0, busts: 0, highestThrow: 0, perGameHighs: [] };
+      return map[name];
+    }
+
+    hist.forEach(function(g){
+      var participantNames = [];
+      if (g.mode === 'ffa') {
+        participantNames = g.participants.slice();
+      } else {
+        g.participants.forEach(function(team){ team.forEach(function(n){ participantNames.push(n); }); });
+      }
+
+      var winners = g.mode === 'ffa' ? [g.winner] : (g.winnerMembers || []);
+      var gameMax = {};
+      var gameBusts = {};
+      participantNames.forEach(function(n){ gameMax[n] = 0; gameBusts[n] = 0; });
+
+      (g.throws || []).forEach(function(entry){
+        (entry.log || []).forEach(function(t){
+          var who = g.mode === 'ffa' ? entry.who : t.thrower;
+          if (!who) return;
+          if (t.bust) {
+            gameBusts[who] = (gameBusts[who] || 0) + 1;
+          } else if (typeof t.score === 'number') {
+            if (t.score > (gameMax[who] || 0)) gameMax[who] = t.score;
+          }
+        });
+      });
+
+      participantNames.forEach(function(name){
+        var rec = ensure(name);
+        rec.games += 1;
+        if (winners.indexOf(name) !== -1) rec.wins += 1;
+        rec.busts += gameBusts[name] || 0;
+        rec.perGameHighs.push(gameMax[name] || 0);
+        if ((gameMax[name] || 0) > rec.highestThrow) rec.highestThrow = gameMax[name];
+      });
+    });
+
+    return Object.keys(map).map(function(k){
+      var r = map[k];
+      var avgBustsPerGame = r.games ? (r.busts / r.games) : 0;
+      var avgHighestPerGame = r.perGameHighs.length ? (r.perGameHighs.reduce(function(a, b){ return a + b; }, 0) / r.perGameHighs.length) : 0;
+      return { name: r.name, games: r.games, wins: r.wins, busts: r.busts, avgBustsPerGame: avgBustsPerGame, highestThrow: r.highestThrow, avgHighestPerGame: avgHighestPerGame };
+    }).sort(function(a, b){
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.games - a.games;
+    });
+  }
+
+  function computeTeamStats(hist){
+    var map = {};
+    hist.forEach(function(g){
+      if (g.mode !== 'teams') return;
+      g.participants.forEach(function(team){
+        var key = team.slice().sort().join(' & ');
+        if (!map[key]) map[key] = { label: team.join(' & '), games: 0, wins: 0 };
+        map[key].games += 1;
+        if (g.winner === team.join(' & ')) map[key].wins += 1;
+      });
+    });
+    return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a, b){
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.games - a.games;
+    });
+  }
+
+  function renderStatsTab(containerId){
+    var app = document.getElementById(containerId || 'app');
+    var hist = loadHistory();
+    var manageHtml = managePlayersHtml();
+    if (hist.length === 0) {
+      app.innerHTML = manageHtml + '<div class="empty-state">No stats yet. Play a few games first.</div>';
+      wireManagePlayers();
+      return;
+    }
+    var overview = computeOverviewStats(hist);
+    var indiv = computeIndividualStats(hist);
+    var teams = computeTeamStats(hist);
+
+    var highestCardBody = '<p class="m-value">' + overview.highestThrowEver + '</p>';
+    if (overview.highestThrowName) {
+      highestCardBody = '<p class="m-crown">&#128081;</p><p class="m-value">' + overview.highestThrowEver + '</p><p class="m-name">' + overview.highestThrowName + '</p>';
+    }
+
+    var overviewHtml =
+      '<p class="section-heading" style="margin-top:0;">Overview</p>' +
+      '<div class="metric-grid">' +
+        '<div class="metric-card"><p class="m-label">Games played</p><p class="m-value">' + overview.totalGames + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Total busts</p><p class="m-value">' + overview.totalBusts + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Avg busts / game</p><p class="m-value">' + overview.avgBustsPerGame.toFixed(1) + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Highest throw</p>' + highestCardBody + '</div>' +
+        '<div class="metric-card"><p class="m-label">Avg highest / game</p><p class="m-value">' + overview.avgHighestPerGame.toFixed(1) + '</p></div>' +
+      '</div>';
+
+    function crownIcon(color){
+      return '<svg width="14" height="14" viewBox="0 0 24 24" style="vertical-align:-2px; margin-right:4px;" fill="' + color + '"><path d="M2 18h20l-2-9-4 3-4-6-4 6-4-3-2 9z"/></svg>';
+    }
+    function rankMedal(i){
+      if (i === 0) return crownIcon('#f0c94f');
+      if (i === 1) return crownIcon('#c0c0c0');
+      if (i === 2) return crownIcon('#c67f3b');
+      return '';
+    }
+
+    var indivRows = indiv.map(function(p, i){
+      var winPct = p.games ? Math.round((p.wins / p.games) * 100) : 0;
+      var safe = p.name.replace(/"/g, '&quot;');
+      return '<tr><td>' + (i + 1) + '</td><td>' + rankMedal(i) + p.name + '</td><td>' + p.games + '</td><td>' + p.wins + '</td><td>' + winPct + '%</td><td>' + p.busts + '</td><td>' + p.avgBustsPerGame.toFixed(1) + '</td><td>' + p.highestThrow + '</td><td>' + p.avgHighestPerGame.toFixed(1) + '</td><td><button type="button" class="chip-settings purge-player-btn" data-name="' + safe + '" aria-label="Clear stats for ' + safe + '">&#10005;</button></td></tr>';
+    }).join('');
+
+    var html =
+      manageHtml +
+      overviewHtml +
+      '<p class="section-heading">Individual leaderboard</p>' +
+      '<div class="table-scroll"><table class="stats-table"><thead><tr><th>#</th><th>Player</th><th>Games</th><th>Wins</th><th>Win %</th><th>Busts</th><th>Avg busts</th><th>Highest</th><th>Avg highest</th><th></th></tr></thead>' +
+      '<tbody>' + indivRows + '</tbody></table></div>';
+
+    if (teams.length > 0) {
+      var teamRows = teams.map(function(t, i){
+        var winPct = t.games ? Math.round((t.wins / t.games) * 100) : 0;
+        return '<tr><td>' + (i + 1) + '</td><td>' + rankMedal(i) + t.label + '</td><td>' + t.games + '</td><td>' + t.wins + '</td><td>' + winPct + '%</td></tr>';
+      }).join('');
+      html +=
+        '<p class="section-heading">2v2 team leaderboard</p>' +
+        '<div class="table-scroll"><table class="stats-table"><thead><tr><th>#</th><th>Team</th><th>Games</th><th>Wins</th><th>Win %</th></tr></thead>' +
+        '<tbody>' + teamRows + '</tbody></table></div>';
+    }
+
+    app.innerHTML = html;
+    wireManagePlayers();
+  }
+
+  function render(){
+    var trippyBg = document.getElementById('trippy-bg');
+    if (trippyBg) {
+      trippyBg.style.display = 'block';
+    }
+    renderPlayTab();
+    var historyPanel = document.getElementById('history-panel');
+    if (historyPanel && historyPanel.style.display === 'block') renderHistoryTab('history-panel');
+    var statsPanel = document.getElementById('stats-panel');
+    if (statsPanel && statsPanel.style.display === 'block') renderStatsTab('stats-panel');
+  }
+
+  function initFooter(){
+    var versionLabel = document.getElementById('version-label');
+    if (versionLabel) versionLabel.textContent = 'v' + APP_VERSION;
+    var panel = document.getElementById('changelog-panel');
+    if (panel) {
+      panel.innerHTML = CHANGELOG.map(function(c){
+        return '<div class="cl-row"><span class="cl-v">v' + c.v + '</span><span class="cl-notes">' + c.notes + '</span></div>';
+      }).join('');
+    }
+    var toggle = document.getElementById('changelog-toggle');
+    if (toggle) {
+      toggle.addEventListener('click', function(){
+        if (panel.style.display === 'none') {
+          panel.style.display = 'block';
+          toggle.textContent = 'Hide changelog';
+        } else {
+          panel.style.display = 'none';
+          toggle.textContent = 'Changelog';
+        }
+      });
+    }
+  }
+
+  refreshRosterDatalist();
+  initFooter();
+  initSettingsPanel();
+  initPlayersPanel();
+  initHistoryStatsButtons();
+  initGlobalMenuButton();
+  initClickSounds();
+  render();
+})();
+</script>
+</body>
+</html>
