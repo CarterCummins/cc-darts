@@ -237,6 +237,12 @@
   </div>
   <p class="label" style="margin-top:16px;">Click sounds</p>
   <div class="sound-row" id="sound-row"></div>
+  <p class="label" style="margin-top:16px;">Music library</p>
+  <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Add songs by URL. Players pick up to 3 from this list for their win songs / snippets.</p>
+  <div id="library-list" style="margin-bottom:8px;"></div>
+  <input type="text" id="library-title-input" placeholder="Song title" style="margin-bottom:6px;" />
+  <input type="text" id="library-url-input" placeholder="Audio file URL (mp3, wav, m4a...)" style="margin-bottom:6px;" />
+  <button type="button" id="library-add-btn" class="btn-primary" style="width:100%;">Add song</button>
   <p class="label" style="margin-top:16px;">Backup &amp; restore</p>
   <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Export before downloading a new version of this file, then import it back &mdash; browsers don't share saved data between file downloads.</p>
   <div style="display:flex; gap:8px;">
@@ -262,6 +268,7 @@
   var ROSTER_KEY = 'darts_roster_v1';
   var HISTORY_KEY = 'darts_history_v1';
   var PROFILES_KEY = 'darts_profiles_v1';
+  var LIBRARY_KEY = 'darts_library_v1';
   var THEME_KEY = 'darts_theme_v1';
   var DEFAULT_THEME = { bg: '#14151a', card: '#1e2028', accent: '#5b8cff' };
   var PRESET_THEMES = [
@@ -413,8 +420,9 @@
     });
   }
 
-  var APP_VERSION = '2.19.0';
+  var APP_VERSION = '3.0.0';
   var CHANGELOG = [
+    { v: '3.0.0', notes: 'Removed Spotify integration entirely \u2014 Spotify deprecated 30-second preview URLs across their Web API on Nov 27, 2024, so preview_url now returns null for nearly every track, for every developer, with no workaround. Replaced it with a self-hosted music library: add songs by URL in Settings, then pick up to 3 per player for their win songs/snippets. Playback is a real audio element you fully control, so autoplay is reliable.' },
     { v: '2.19.0', notes: 'Replaced the Spotify iframe embed with real audio playback: song/snippet previews now go through the ck-darts-proxy Worker (which handles the Spotify token exchange server-side, avoiding the CORS block) and play via a native audio element triggered directly from your click. This is what actually satisfies browser autoplay policy, since a cross-origin iframe never reliably did. Falls back to a manual play button if autoplay is blocked, or an "Open in Spotify" link if no 30s preview exists for that track.' },
     { v: '2.18.1', notes: 'Removed loading="lazy" from the Spotify iframe \u2014 it was deferring iframe initialization, which could push it past the moment your click grants autoplay permission. Worth a fresh test.' },
     { v: '2.18.0', notes: 'Removed the Spotify Developer credentials feature \u2014 confirmed it can never work from a plain HTML file, since Spotify blocks direct browser requests to their token endpoint with CORS (a known, years-old restriction on their end). Back to one honest approach: the plain embed with autoplay, and the \u25b6 Play button as the reliable manual backup.' },
@@ -550,6 +558,39 @@
       saveTheme(DEFAULT_THEME);
     });
 
+    function renderLibraryList(){
+      var lib = loadLibrary();
+      var listEl = document.getElementById('library-list');
+      if (!lib.length) {
+        listEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:0;">No songs added yet.</p>';
+        return;
+      }
+      listEl.innerHTML = lib.map(function(t){
+        var safeTitle = t.title.replace(/"/g, '&quot;');
+        return '<div class="chip-wrap" style="width:100%; margin-bottom:6px;">' +
+          '<span class="chip" style="cursor:default; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + safeTitle + '</span>' +
+          '<button type="button" class="chip-settings library-delete-btn" data-id="' + t.id + '" aria-label="Remove ' + safeTitle + '">&#10005;</button>' +
+        '</div>';
+      }).join('');
+      listEl.querySelectorAll('.library-delete-btn').forEach(function(b){
+        b.addEventListener('click', function(){
+          deleteLibraryTrack(b.dataset.id);
+          renderLibraryList();
+        });
+      });
+    }
+    renderLibraryList();
+    document.getElementById('library-add-btn').addEventListener('click', function(){
+      var titleInput = document.getElementById('library-title-input');
+      var urlInput = document.getElementById('library-url-input');
+      var track = addLibraryTrack(titleInput.value, urlInput.value);
+      if (track) {
+        titleInput.value = '';
+        urlInput.value = '';
+        renderLibraryList();
+      }
+    });
+
     document.getElementById('export-data-btn').addEventListener('click', exportAllData);
     document.getElementById('import-data-btn').addEventListener('click', function(){
       document.getElementById('import-file-input').click();
@@ -670,11 +711,38 @@
     panel.querySelectorAll('.player-row-edit').forEach(function(b){
       b.addEventListener('click', function(){
         var name = b.dataset.name;
-        var profile = getProfile(name);
-        state.playersPanelSongMode = (profile.artistUris && profile.artistUris.length) ? 'artist' : 'tracks';
         state.playersPanelEditing = name;
         state.playersPanelPendingPhoto = undefined;
         renderPlayersPanel();
+      });
+    });
+  }
+
+  function libraryCheckboxListHtml(idPrefix, selectedIds){
+    var lib = loadLibrary();
+    if (!lib.length) {
+      return '<p style="font-size:12px; color:var(--text-muted); margin:0 0 10px;">No songs in your music library yet. Add some in Settings first.</p>';
+    }
+    return '<div class="' + idPrefix + '-track-list" style="margin-bottom:10px;">' +
+      lib.map(function(t){
+        var checked = selectedIds.indexOf(t.id) !== -1;
+        var safe = t.title.replace(/"/g, '&quot;');
+        return '<label style="display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 0; cursor:pointer;">' +
+          '<input type="checkbox" class="' + idPrefix + '-track-checkbox" data-id="' + t.id + '" ' + (checked ? 'checked' : '') + ' style="width:auto;" />' +
+          safe +
+        '</label>';
+      }).join('') +
+      '</div>' +
+      '<p style="font-size:11px; color:var(--text-muted); margin:0 0 10px;">Pick up to 3.</p>';
+  }
+
+  function wireLibraryCheckboxLimit(container, idPrefix, max){
+    var boxes = container.querySelectorAll('.' + idPrefix + '-track-checkbox');
+    boxes.forEach(function(b){
+      b.addEventListener('change', function(){
+        var checkedCount = 0;
+        boxes.forEach(function(x){ if (x.checked) checkedCount++; });
+        if (checkedCount > max) b.checked = false;
       });
     });
   }
@@ -684,41 +752,6 @@
     var name = state.playersPanelEditing;
     var profile = getProfile(name);
     var nameSafe = name.replace(/"/g, '&quot;');
-    var artistSafe = (profile.artist || '').replace(/"/g, '&quot;');
-    var mode = state.playersPanelSongMode;
-
-    var modeToggleHtml =
-      '<div class="mode-row" id="pp-song-mode-row" style="margin-bottom:10px;">' +
-        '<button type="button" data-song-mode="tracks" class="' + (mode === 'tracks' ? 'active' : '') + '">5 songs</button>' +
-        '<button type="button" data-song-mode="artist" class="' + (mode === 'artist' ? 'active' : '') + '">Artist link</button>' +
-      '</div>';
-
-    var songFieldsHtml = '';
-    if (mode === 'artist') {
-      var artistInputs = '';
-      for (var ai = 0; ai < 5; ai++) {
-        var artistVal = (profile.artistUris && profile.artistUris[ai]) ? ('https://open.spotify.com/artist/' + profile.artistUris[ai]) : '';
-        artistInputs += '<div class="linked-input-row">' +
-          '<input type="text" class="pp-artist-input" data-ai="' + ai + '" value="' + artistVal.replace(/"/g, '&quot;') + '" placeholder="Spotify artist link ' + (ai + 1) + '" />' +
-          '<button type="button" class="search-spotify-btn" data-pp-target-class="pp-artist-input" data-target-i="' + ai + '" aria-label="Search Spotify">&#128269;</button>' +
-        '</div>';
-      }
-      songFieldsHtml =
-        '<p class="label">Artist links &middot; up to 5, randomly picks one, plays their top track</p>' +
-        artistInputs;
-    } else {
-      var songInputs = '';
-      for (var si = 0; si < 5; si++) {
-        var songVal = (profile.songs && profile.songs[si]) ? profile.songs[si] : '';
-        songInputs += '<div class="linked-input-row">' +
-          '<input type="text" class="pp-song-input" data-si="' + si + '" value="' + songVal.replace(/"/g, '&quot;') + '" placeholder="Spotify track link ' + (si + 1) + '" />' +
-          '<button type="button" class="search-spotify-btn" data-pp-target-class="pp-song-input" data-target-i="' + si + '" aria-label="Search Spotify">&#128269;</button>' +
-        '</div>';
-      }
-      songFieldsHtml =
-        '<p class="label">Win songs &middot; paste Spotify track links, up to 5</p>' +
-        songInputs;
-    }
 
     panel.innerHTML =
       '<p class="label" style="margin-top:0; display:flex; align-items:center; justify-content:space-between;">' +
@@ -734,13 +767,14 @@
         '<input type="file" id="pp-photo-file-input" accept="image/*" style="display:none;" />' +
       '</div>' +
       '<input type="text" id="pp-name-input" value="' + nameSafe + '" placeholder="Name" style="margin-bottom:10px;" />' +
-      '<input type="text" id="pp-artist-input" value="' + artistSafe + '" placeholder="Favorite artist (optional)" style="margin-bottom:10px;" />' +
-      modeToggleHtml +
-      songFieldsHtml +
+      '<p class="label">Win songs / snippets</p>' +
+      libraryCheckboxListHtml('pp', profile.trackIds || []) +
       '<div style="display:flex; gap:8px; margin-top:8px;">' +
         '<button type="button" class="btn-primary" id="pp-save-btn" style="flex:1;">Save</button>' +
         '<button type="button" class="btn-danger" id="pp-delete-btn" style="flex:1;">Delete</button>' +
       '</div>';
+
+    wireLibraryCheckboxLimit(panel, 'pp', 3);
 
     document.getElementById('pp-back-btn').addEventListener('click', function(){
       state.playersPanelEditing = null;
@@ -766,26 +800,6 @@
       var nameNow = document.getElementById('pp-name-input').value || name;
       document.getElementById('pp-photo-preview-wrap').innerHTML = avatarHtml(null, nameNow);
     });
-    document.getElementById('pp-song-mode-row').querySelectorAll('button').forEach(function(b){
-      b.addEventListener('click', function(){
-        state.playersPanelSongMode = b.dataset.songMode;
-        renderPlayersPanelEditForm();
-      });
-    });
-    panel.querySelectorAll('.search-spotify-btn').forEach(function(b){
-      b.addEventListener('click', function(){
-        var cls = b.dataset.ppTargetClass;
-        var idx = b.dataset.targetI;
-        var attr = cls === 'pp-artist-input' ? 'data-ai' : 'data-si';
-        var input = panel.querySelector('.' + cls + '[' + attr + '="' + idx + '"]');
-        var query = input ? input.value.trim() : '';
-        if (!query || parseSpotifyArtistId(query) || parseSpotifyTrackId(query)) {
-          query = document.getElementById('pp-artist-input').value.trim() || query;
-        }
-        if (!query) return;
-        window.open('https://open.spotify.com/search/' + encodeURIComponent(query), '_blank', 'noopener');
-      });
-    });
     document.getElementById('pp-save-btn').addEventListener('click', function(){
       var oldName = name;
       var newNameRaw = document.getElementById('pp-name-input').value;
@@ -793,29 +807,15 @@
       if (newName.toLowerCase() !== oldName.toLowerCase()) {
         renameRosterPlayer(oldName, newName);
       }
-      var artist = document.getElementById('pp-artist-input').value.trim();
       var existingProfile = getProfile(oldName);
+      var trackIds = [];
+      panel.querySelectorAll('.pp-track-checkbox').forEach(function(cb){
+        if (cb.checked) trackIds.push(cb.dataset.id);
+      });
       var profileToSave = {
-        artist: artist,
-        songs: [],
-        artistUris: [],
+        trackIds: trackIds.slice(0, 3),
         photo: (state.playersPanelPendingPhoto === undefined) ? (existingProfile.photo || null) : state.playersPanelPendingPhoto
       };
-      if (state.playersPanelSongMode === 'artist') {
-        var artistUris = [];
-        panel.querySelectorAll('.pp-artist-input').forEach(function(inp){
-          var id = parseSpotifyArtistId(inp.value);
-          if (id && artistUris.indexOf(id) === -1) artistUris.push(id);
-        });
-        profileToSave.artistUris = artistUris.slice(0, 5);
-      } else {
-        var songs = [];
-        panel.querySelectorAll('.pp-song-input').forEach(function(inp){
-          var id = parseSpotifyTrackId(inp.value);
-          if (id && songs.indexOf(id) === -1) songs.push(id);
-        });
-        profileToSave.songs = songs.slice(0, 5);
-      }
       saveProfile(newName, profileToSave);
       state.playersPanelEditing = null;
       renderPlayersPanel();
@@ -835,7 +835,8 @@
       roster: loadRoster(),
       profiles: loadProfiles(),
       history: loadHistory(),
-      theme: loadTheme()
+      theme: loadTheme(),
+      library: loadLibrary()
     };
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     var url = URL.createObjectURL(blob);
@@ -858,16 +859,17 @@
         window.alert('That file doesn\u2019t look like a valid CK Darts backup.');
         return;
       }
-      var hasAny = data && (data.roster || data.profiles || data.history || data.theme);
+      var hasAny = data && (data.roster || data.profiles || data.history || data.theme || data.library);
       if (!hasAny) {
         window.alert('That file doesn\u2019t look like a valid CK Darts backup.');
         return;
       }
-      if (!window.confirm('Import this backup? It will replace your current saved players, songs, history, and theme.')) return;
+      if (!window.confirm('Import this backup? It will replace your current saved players, songs, history, theme, and music library.')) return;
       if (data.roster) saveRoster(data.roster);
       if (data.profiles) saveProfiles(data.profiles);
       if (data.history) saveHistory(data.history);
       if (data.theme) saveTheme(data.theme);
+      if (data.library) saveLibrary(data.library);
       window.location.reload();
     };
     reader.readAsText(file);
@@ -993,9 +995,8 @@
   function getProfile(name){
     var profiles = loadProfiles();
     var p = profiles[(name || '').toLowerCase()];
-    if (!p) return { artist: '', songs: [], artistUris: [], photo: null };
-    if (!p.artistUris) p.artistUris = p.artistUri ? [p.artistUri] : [];
-    if (!p.songs) p.songs = [];
+    if (!p) return { trackIds: [], photo: null };
+    if (!p.trackIds) p.trackIds = [];
     if (p.photo === undefined) p.photo = null;
     return p;
   }
@@ -1036,59 +1037,53 @@
     reader.onerror = function(){ callback(null); };
     reader.readAsDataURL(file);
   }
-  function parseSpotifyTrackId(input){
-    if (!input) return '';
-    input = input.trim();
-    var m = input.match(/spotify\.com\/track\/([a-zA-Z0-9]+)/);
-    if (m) return m[1];
-    m = input.match(/spotify:track:([a-zA-Z0-9]+)/);
-    if (m) return m[1];
-    if (/^[a-zA-Z0-9]{15,30}$/.test(input)) return input;
-    return '';
+  function loadLibrary(){
+    try { return JSON.parse(localStorage.getItem(LIBRARY_KEY)) || []; }
+    catch(e){ return []; }
   }
-  function parseSpotifyArtistId(input){
-    if (!input) return '';
-    input = input.trim();
-    var m = input.match(/spotify\.com\/artist\/([a-zA-Z0-9]+)/);
-    if (m) return m[1];
-    m = input.match(/spotify:artist:([a-zA-Z0-9]+)/);
-    if (m) return m[1];
-    if (/^[a-zA-Z0-9]{15,30}$/.test(input)) return input;
-    return '';
+  function saveLibrary(lib){
+    try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(lib)); } catch(e){}
   }
-  function profileHasAudio(profile){
-    return !!((profile.artistUris && profile.artistUris.length > 0) || (profile.songs && profile.songs.length > 0));
+  function addLibraryTrack(title, url){
+    title = (title || '').trim();
+    url = (url || '').trim();
+    if (!title || !url) return null;
+    var lib = loadLibrary();
+    var track = { id: 't' + Date.now() + Math.floor(Math.random() * 1000), title: title, url: url };
+    lib.push(track);
+    saveLibrary(lib);
+    return track;
   }
-  function pickProfileEmbedUri(profile){
-    if (profile.artistUris && profile.artistUris.length) {
-      return 'spotify:artist:' + profile.artistUris[Math.floor(Math.random() * profile.artistUris.length)];
-    }
-    if (profile.songs && profile.songs.length) {
-      return 'spotify:track:' + profile.songs[Math.floor(Math.random() * profile.songs.length)];
-    }
+  function deleteLibraryTrack(id){
+    var lib = loadLibrary().filter(function(t){ return t.id !== id; });
+    saveLibrary(lib);
+    var profiles = loadProfiles();
+    var changed = false;
+    Object.keys(profiles).forEach(function(k){
+      var p = profiles[k];
+      if (p.trackIds && p.trackIds.indexOf(id) !== -1) {
+        p.trackIds = p.trackIds.filter(function(t){ return t !== id; });
+        changed = true;
+      }
+    });
+    if (changed) saveProfiles(profiles);
+  }
+  function getLibraryTrack(id){
+    var lib = loadLibrary();
+    for (var i = 0; i < lib.length; i++) { if (lib[i].id === id) return lib[i]; }
     return null;
   }
+  function profileHasAudio(profile){
+    return !!(profile.trackIds && profile.trackIds.length > 0);
+  }
+  function pickProfileTrack(profile){
+    if (!profile.trackIds || !profile.trackIds.length) return null;
+    var candidates = profile.trackIds.map(getLibraryTrack).filter(Boolean);
+    if (!candidates.length) return null;
+    return candidates[Math.floor(Math.random() * candidates.length)];
+  }
 
-  var PROXY_BASE = 'https://ck-darts-proxy.carter-cummins.workers.dev';
   window.__ckdAudio = window.__ckdAudio || {};
-
-  function openSpotifyUri(spotifyUri){
-    var parts = spotifyUri.split(':');
-    window.open('https://open.spotify.com/' + parts[1] + '/' + parts[2], '_blank', 'noopener');
-  }
-
-  function fetchPreview(spotifyUri){
-    var parts = spotifyUri.split(':');
-    var type = parts[1];
-    var id = parts[2];
-    var endpoint = type === 'artist' ? 'artist-preview' : 'track-preview';
-    return fetch(PROXY_BASE + '/' + endpoint + '?id=' + encodeURIComponent(id))
-      .then(function(resp){
-        if (!resp.ok) return null;
-        return resp.json();
-      })
-      .catch(function(){ return null; });
-  }
 
   function stopAudio(containerId){
     var existing = window.__ckdAudio[containerId];
@@ -1098,48 +1093,30 @@
     }
   }
 
-  function playAudioPreview(containerId, spotifyUri, durationMs){
+  function playLibraryTrack(containerId, track, durationMs){
     var target = document.getElementById(containerId);
-    if (!target) return;
+    if (!target || !track) return;
     stopAudio(containerId);
-    target.innerHTML = '<p class="label" style="margin:0;">Loading song&hellip;</p>';
-
-    fetchPreview(spotifyUri).then(function(data){
-      var current = document.getElementById(containerId);
-      if (!current) return;
-      if (!data || !data.previewUrl) {
-        current.innerHTML =
-          '<button type="button" class="chip embed-fallback" id="' + containerId + '-open">&#127925; ' +
-          (data && data.name ? data.name : 'Open in Spotify') + '</button>';
-        var openBtn = document.getElementById(containerId + '-open');
-        if (openBtn) openBtn.addEventListener('click', function(){ openSpotifyUri(spotifyUri); });
-        return;
-      }
-      var audio = new Audio(data.previewUrl);
-      audio.volume = 1;
-      window.__ckdAudio[containerId] = audio;
-      current.innerHTML = '<p class="label" style="margin:0;">' + (data.name || 'Now playing') + '</p>';
-      var playAttempt = audio.play();
-      if (playAttempt && playAttempt.catch) {
-        playAttempt.catch(function(){
-          current.innerHTML =
-            '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654; Play ' +
-            (data.name || '') + '</button>';
-          var fb = document.getElementById(containerId + '-fallback');
-          if (fb) fb.addEventListener('click', function(){ audio.play(); });
-        });
-      }
-      if (durationMs) {
-        setTimeout(function(){ stopAudio(containerId); }, durationMs);
-      }
-      audio.addEventListener('ended', function(){
-        if (window.__ckdAudio[containerId] === audio) window.__ckdAudio[containerId] = null;
+    var audio = new Audio(track.url);
+    audio.volume = 1;
+    window.__ckdAudio[containerId] = audio;
+    target.innerHTML = '<p class="label" style="margin:0;">' + track.title + '</p>';
+    var playAttempt = audio.play();
+    if (playAttempt && playAttempt.catch) {
+      playAttempt.catch(function(){
+        target.innerHTML =
+          '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654; Play ' +
+          track.title + '</button>';
+        var fb = document.getElementById(containerId + '-fallback');
+        if (fb) fb.addEventListener('click', function(){ audio.play(); });
       });
+    }
+    if (durationMs) {
+      setTimeout(function(){ stopAudio(containerId); }, durationMs);
+    }
+    audio.addEventListener('ended', function(){
+      if (window.__ckdAudio[containerId] === audio) window.__ckdAudio[containerId] = null;
     });
-  }
-
-  function playSpotifySong(containerId, songInfo, durationMs){
-    playAudioPreview(containerId, songInfo.uri, durationMs);
   }
   function loadHistory(){
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
@@ -1176,10 +1153,8 @@
     cricketDartsThisTurn: 0,
     firstIndex: 0,
     editingPlayer: null,
-    editSongMode: 'tracks',
     pendingPhoto: undefined,
     playersPanelEditing: null,
-    playersPanelSongMode: 'tracks',
     playersPanelPendingPhoto: undefined,
     winner: null,
     winnerLabel: null,
@@ -1208,8 +1183,6 @@
 
   function openEditPlayer(name){
     state.editingPlayer = name;
-    var profile = getProfile(name);
-    state.editSongMode = (profile.artistUris && profile.artistUris.length) ? 'artist' : 'tracks';
     state.pendingPhoto = undefined;
     render();
   }
@@ -1224,11 +1197,6 @@
 
   function closeEditPlayer(){
     state.editingPlayer = null;
-    render();
-  }
-
-  function setEditSongMode(mode){
-    state.editSongMode = mode;
     render();
   }
 
@@ -1601,41 +1569,6 @@
       if (state.editingPlayer) {
         var editSafe = state.editingPlayer.replace(/"/g, '&quot;');
         var profile = getProfile(state.editingPlayer);
-        var artistSafe = (profile.artist || '').replace(/"/g, '&quot;');
-        var songMode = state.editSongMode;
-
-        var modeToggleHtml =
-          '<div class="mode-row" id="song-mode-row" style="margin-bottom:10px;">' +
-            '<button type="button" data-song-mode="tracks" class="' + (songMode === 'tracks' ? 'active' : '') + '">5 songs</button>' +
-            '<button type="button" data-song-mode="artist" class="' + (songMode === 'artist' ? 'active' : '') + '">Artist link</button>' +
-          '</div>';
-
-        var songFieldsHtml = '';
-        if (songMode === 'artist') {
-          var artistInputs = '';
-          for (var ai = 0; ai < 5; ai++) {
-            var artistVal = (profile.artistUris && profile.artistUris[ai]) ? ('https://open.spotify.com/artist/' + profile.artistUris[ai]) : '';
-            artistInputs += '<div class="linked-input-row">' +
-              '<input type="text" class="artist-input" data-ai="' + ai + '" value="' + artistVal.replace(/"/g, '&quot;') + '" placeholder="Spotify artist link ' + (ai + 1) + '" />' +
-              '<button type="button" class="search-spotify-btn" data-target-class="artist-input" data-target-i="' + ai + '" aria-label="Search Spotify">&#128269;</button>' +
-            '</div>';
-          }
-          songFieldsHtml =
-            '<p class="label">Artist links &middot; up to 5, randomly picks one, plays their top track</p>' +
-            artistInputs;
-        } else {
-          var songInputs = '';
-          for (var si = 0; si < 5; si++) {
-            var songVal = (profile.songs && profile.songs[si]) ? profile.songs[si] : '';
-            songInputs += '<div class="linked-input-row">' +
-              '<input type="text" class="song-input" data-si="' + si + '" value="' + songVal.replace(/"/g, '&quot;') + '" placeholder="Spotify track link ' + (si + 1) + '" />' +
-              '<button type="button" class="search-spotify-btn" data-target-class="song-input" data-target-i="' + si + '" aria-label="Search Spotify">&#128269;</button>' +
-            '</div>';
-          }
-          songFieldsHtml =
-            '<p class="label">Win songs &middot; paste Spotify track links, up to 5</p>' +
-            songInputs;
-        }
 
         chipsHtml +=
           '<div class="edit-panel" id="edit-panel">' +
@@ -1649,9 +1582,8 @@
               '<input type="file" id="edit-photo-file-input" accept="image/*" style="display:none;" />' +
             '</div>' +
             '<input type="text" id="edit-name-input" value="' + editSafe + '" placeholder="Name" style="margin-bottom:10px;" />' +
-            '<input type="text" id="edit-artist-input" value="' + artistSafe + '" placeholder="Favorite artist (optional)" style="margin-bottom:10px;" />' +
-            modeToggleHtml +
-            songFieldsHtml +
+            '<p class="label">Win songs / snippets</p>' +
+            libraryCheckboxListHtml('edit', profile.trackIds || []) +
             '<div style="display:flex; gap:8px; margin-top:4px;">' +
               '<button type="button" class="btn-primary" id="edit-save-btn" style="flex:1;">Save</button>' +
               '<button type="button" class="btn-danger" id="edit-delete-btn" style="flex:1;">Delete</button>' +
@@ -1718,26 +1650,7 @@
     }
     var editPanel = document.getElementById('edit-panel');
     if (editPanel) {
-      var songModeRow = document.getElementById('song-mode-row');
-      if (songModeRow) {
-        songModeRow.querySelectorAll('button').forEach(function(b){
-          b.addEventListener('click', function(){ setEditSongMode(b.dataset.songMode); });
-        });
-      }
-      editPanel.querySelectorAll('.search-spotify-btn').forEach(function(b){
-        b.addEventListener('click', function(){
-          var cls = b.dataset.targetClass;
-          var idx = b.dataset.targetI;
-          var attr = cls === 'artist-input' ? 'data-ai' : 'data-si';
-          var input = editPanel.querySelector('.' + cls + '[' + attr + '="' + idx + '"]');
-          var query = input ? input.value.trim() : '';
-          if (!query || parseSpotifyArtistId(query) || parseSpotifyTrackId(query)) {
-            query = document.getElementById('edit-artist-input').value.trim() || query;
-          }
-          if (!query) return;
-          window.open('https://open.spotify.com/search/' + encodeURIComponent(query), '_blank', 'noopener');
-        });
-      });
+      wireLibraryCheckboxLimit(editPanel, 'edit', 3);
       var editPhotoInput = document.getElementById('edit-photo-file-input');
       document.getElementById('edit-photo-upload-btn').addEventListener('click', function(){
         editPhotoInput.click();
@@ -1765,29 +1678,15 @@
         if (newName.toLowerCase() !== oldName.toLowerCase()) {
           renameRosterPlayer(oldName, newName);
         }
-        var artist = document.getElementById('edit-artist-input').value.trim();
         var existingProfile = getProfile(oldName);
+        var trackIds = [];
+        editPanel.querySelectorAll('.edit-track-checkbox').forEach(function(cb){
+          if (cb.checked) trackIds.push(cb.dataset.id);
+        });
         var profileToSave = {
-          artist: artist,
-          songs: [],
-          artistUris: [],
+          trackIds: trackIds.slice(0, 3),
           photo: (state.pendingPhoto === undefined) ? (existingProfile.photo || null) : state.pendingPhoto
         };
-        if (state.editSongMode === 'artist') {
-          var artistUris = [];
-          document.querySelectorAll('.artist-input').forEach(function(inp){
-            var id = parseSpotifyArtistId(inp.value);
-            if (id && artistUris.indexOf(id) === -1) artistUris.push(id);
-          });
-          profileToSave.artistUris = artistUris.slice(0, 5);
-        } else {
-          var songs = [];
-          document.querySelectorAll('.song-input').forEach(function(inp){
-            var id = parseSpotifyTrackId(inp.value);
-            if (id && songs.indexOf(id) === -1) songs.push(id);
-          });
-          profileToSave.songs = songs.slice(0, 5);
-        }
         saveProfile(newName, profileToSave);
         closeEditPlayer();
       });
@@ -2015,7 +1914,7 @@
     tick();
   }
 
-  function showSnippet(name, uri){
+  function showSnippet(name, track){
     var zone = document.getElementById('snippet-zone');
     if (!zone) return;
     zone.innerHTML =
@@ -2023,7 +1922,7 @@
         '<p class="label" style="margin:0 0 6px;">' + name + '&rsquo;s 50+ snippet</p>' +
         '<div id="snippet-embed"></div>' +
       '</div>';
-    playSpotifySong('snippet-embed', { uri: uri, name: null }, 10000);
+    playLibraryTrack('snippet-embed', track, 10000);
     clearTimeout(window.__snippetClearTimer);
     window.__snippetClearTimer = setTimeout(function(){
       var z = document.getElementById('snippet-zone');
@@ -2036,9 +1935,9 @@
     if (val <= 50 || remaining === 0) return;
     var profile = getProfile(name);
     if (!profileHasAudio(profile)) return;
-    var uri = pickProfileEmbedUri(profile);
-    if (!uri) return;
-    showSnippet(name, uri);
+    var track = pickProfileTrack(profile);
+    if (!track) return;
+    showSnippet(name, track);
   }
 
   function pickWinnerSong(candidates){
@@ -2048,9 +1947,9 @@
     if (withAudio.length === 0) return null;
     var chosenName = withAudio[Math.floor(Math.random() * withAudio.length)];
     var profile = getProfile(chosenName);
-    var uri = pickProfileEmbedUri(profile);
-    if (!uri) return null;
-    return { name: chosenName, artist: profile.artist, uri: uri };
+    var track = pickProfileTrack(profile);
+    if (!track) return null;
+    return { playerName: chosenName, title: track.title, url: track.url };
   }
 
   function renderFinished(){
@@ -2065,7 +1964,7 @@
     var songHtml = '';
     if (song) {
       songHtml =
-        '<p class="label" style="text-align:center; margin-top:16px;">' + song.name + '&rsquo;s song' + (song.artist ? ' &middot; ' + song.artist : '') + '</p>' +
+        '<p class="label" style="text-align:center; margin-top:16px;">' + song.playerName + '&rsquo;s song</p>' +
         '<div id="win-song-embed"></div>';
     }
     app.innerHTML =
@@ -2087,7 +1986,7 @@
     document.getElementById('main-menu-btn').addEventListener('click', backToChooseGame);
     document.getElementById('players-btn-finish').addEventListener('click', togglePlayersPanel);
     if (song) {
-      playSpotifySong('win-song-embed', song, 60000);
+      playLibraryTrack('win-song-embed', { title: song.title, url: song.url }, 60000);
     }
     var fwCanvas = document.getElementById('fireworks-canvas');
     if (fwCanvas) launchFireworks(fwCanvas);
