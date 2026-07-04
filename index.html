@@ -413,8 +413,9 @@
     });
   }
 
-  var APP_VERSION = '2.18.1';
+  var APP_VERSION = '2.19.0';
   var CHANGELOG = [
+    { v: '2.19.0', notes: 'Replaced the Spotify iframe embed with real audio playback: song/snippet previews now go through the ck-darts-proxy Worker (which handles the Spotify token exchange server-side, avoiding the CORS block) and play via a native audio element triggered directly from your click. This is what actually satisfies browser autoplay policy, since a cross-origin iframe never reliably did. Falls back to a manual play button if autoplay is blocked, or an "Open in Spotify" link if no 30s preview exists for that track.' },
     { v: '2.18.1', notes: 'Removed loading="lazy" from the Spotify iframe \u2014 it was deferring iframe initialization, which could push it past the moment your click grants autoplay permission. Worth a fresh test.' },
     { v: '2.18.0', notes: 'Removed the Spotify Developer credentials feature \u2014 confirmed it can never work from a plain HTML file, since Spotify blocks direct browser requests to their token endpoint with CORS (a known, years-old restriction on their end). Back to one honest approach: the plain embed with autoplay, and the \u25b6 Play button as the reliable manual backup.' },
     { v: '2.17.1', notes: 'Export/Import now includes your Spotify Client ID/Secret \u2014 previously they weren\u2019t carried over, so a phone or new device would fall back to the old embed method until you re-entered them.' },
@@ -1068,33 +1069,77 @@
     return null;
   }
 
-  window.__spotifyEmbedSrc = window.__spotifyEmbedSrc || {};
+  var PROXY_BASE = 'https://ck-darts-proxy.carter-cummins.workers.dev';
+  window.__ckdAudio = window.__ckdAudio || {};
 
-  function createSpotifyEmbed(containerId, spotifyUri, durationMs){
-    var target = document.getElementById(containerId);
-    if (!target) return;
+  function openSpotifyUri(spotifyUri){
+    var parts = spotifyUri.split(':');
+    window.open('https://open.spotify.com/' + parts[1] + '/' + parts[2], '_blank', 'noopener');
+  }
+
+  function fetchPreview(spotifyUri){
     var parts = spotifyUri.split(':');
     var type = parts[1];
     var id = parts[2];
-    var src = 'https://open.spotify.com/embed/' + type + '/' + id + '?utm_source=generator&autoplay=1';
-    window.__spotifyEmbedSrc[containerId] = src;
-    target.innerHTML =
-      '<iframe id="' + containerId + '-iframe" style="border-radius:12px; border:0;" src="' + src + '" width="100%" height="152" allow="autoplay; encrypted-media; clipboard-write; fullscreen; picture-in-picture"></iframe>' +
-      '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654; Play</button>';
-    document.getElementById(containerId + '-fallback').addEventListener('click', function(){
-      var f = document.getElementById(containerId + '-iframe');
-      if (f && window.__spotifyEmbedSrc[containerId]) f.src = window.__spotifyEmbedSrc[containerId];
-    });
-    if (durationMs) {
-      setTimeout(function(){
-        var f = document.getElementById(containerId + '-iframe');
-        if (f) f.src = '';
-      }, durationMs);
+    var endpoint = type === 'artist' ? 'artist-preview' : 'track-preview';
+    return fetch(PROXY_BASE + '/' + endpoint + '?id=' + encodeURIComponent(id))
+      .then(function(resp){
+        if (!resp.ok) return null;
+        return resp.json();
+      })
+      .catch(function(){ return null; });
+  }
+
+  function stopAudio(containerId){
+    var existing = window.__ckdAudio[containerId];
+    if (existing) {
+      try { existing.pause(); } catch(e){}
+      window.__ckdAudio[containerId] = null;
     }
   }
 
+  function playAudioPreview(containerId, spotifyUri, durationMs){
+    var target = document.getElementById(containerId);
+    if (!target) return;
+    stopAudio(containerId);
+    target.innerHTML = '<p class="label" style="margin:0;">Loading song&hellip;</p>';
+
+    fetchPreview(spotifyUri).then(function(data){
+      var current = document.getElementById(containerId);
+      if (!current) return;
+      if (!data || !data.previewUrl) {
+        current.innerHTML =
+          '<button type="button" class="chip embed-fallback" id="' + containerId + '-open">&#127925; ' +
+          (data && data.name ? data.name : 'Open in Spotify') + '</button>';
+        var openBtn = document.getElementById(containerId + '-open');
+        if (openBtn) openBtn.addEventListener('click', function(){ openSpotifyUri(spotifyUri); });
+        return;
+      }
+      var audio = new Audio(data.previewUrl);
+      audio.volume = 1;
+      window.__ckdAudio[containerId] = audio;
+      current.innerHTML = '<p class="label" style="margin:0;">' + (data.name || 'Now playing') + '</p>';
+      var playAttempt = audio.play();
+      if (playAttempt && playAttempt.catch) {
+        playAttempt.catch(function(){
+          current.innerHTML =
+            '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654; Play ' +
+            (data.name || '') + '</button>';
+          var fb = document.getElementById(containerId + '-fallback');
+          if (fb) fb.addEventListener('click', function(){ audio.play(); });
+        });
+      }
+      if (durationMs) {
+        setTimeout(function(){ stopAudio(containerId); }, durationMs);
+      }
+      audio.addEventListener('ended', function(){
+        if (window.__ckdAudio[containerId] === audio) window.__ckdAudio[containerId] = null;
+      });
+    });
+  }
+
   function playSpotifySong(containerId, songInfo, durationMs){
-    createSpotifyEmbed(containerId, songInfo.uri, durationMs);
+    playAudioPreview(containerId, songInfo.uri, durationMs);
   }
   function loadHistory(){
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
