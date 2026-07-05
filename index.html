@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CM Darts</title>
+<title>CC Darts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -264,7 +264,7 @@
   <input type="file" id="import-file-input" accept="application/json" style="display:none;" />
 </div>
 <div id="app-wrap">
-  <h1>CM Darts</h1>
+  <h1>CC Darts</h1>
   <p class="subtitle">Free-for-all or 2v2 teams, with saved players and stats</p>
   <div id="snippet-zone"></div>
   <div id="app"></div>
@@ -432,8 +432,9 @@
     });
   }
 
-  var APP_VERSION = '3.3.0';
+  var APP_VERSION = '3.3.1';
   var CHANGELOG = [
+    { v: '3.3.1', notes: 'Renamed the app from CM Darts to CC Darts (title, header, and backup filename).' },
     { v: '3.3.0', notes: 'Music library is now its own tab (top-right, next to History/Stats/Players) instead of buried in Settings \u2014 easier to manage as the song list grows. Also reworked how players get songs: instead of adding to the library first then picking from a checklist, each player\u2019s edit screen now has its own search box \u2014 search and tap a result to add it directly to that player\u2019s 3 slots in one step (it\u2019s added to the shared library automatically if it wasn\u2019t already there).' },
     { v: '3.2.1', notes: 'Fixed the Main menu button (top-left) overlapping the History/Stats/Players pills (top-right) on narrow phone screens \u2014 those buttons now shrink to icon-only under 480px wide so there\u2019s always room for both sides.' },
     { v: '3.2.0', notes: 'Added a searchable song picker in the Music Library (Settings) \u2014 type a song or artist and pick from a live dropdown with cover art and 30-second previews, powered by Deezer\u2019s free public catalog (no login needed, unlike Spotify which killed preview access). Manual URL entry is still there as a fallback. Cover art now shows next to songs in the picker and on the win screen.' },
@@ -917,7 +918,7 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'cm-darts-backup.json';
+    a.download = 'cc-darts-backup.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -931,12 +932,12 @@
       try {
         data = JSON.parse(e.target.result);
       } catch(err){
-        window.alert('That file doesn\u2019t look like a valid CM Darts backup.');
+        window.alert('That file doesn\u2019t look like a valid CC Darts backup.');
         return;
       }
       var hasAny = data && (data.roster || data.profiles || data.history || data.theme || data.library);
       if (!hasAny) {
-        window.alert('That file doesn\u2019t look like a valid CM Darts backup.');
+        window.alert('That file doesn\u2019t look like a valid CC Darts backup.');
         return;
       }
       if (!window.confirm('Import this backup? It will replace your current saved players, songs, history, theme, and music library.')) return;
