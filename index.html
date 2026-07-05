@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CK Darts</title>
+<title>CM Darts</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -198,6 +198,16 @@
   .sound-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
   .sound-btn { font-size: 12px; padding: 6px 10px; }
   .sound-btn.active { border: 2px solid var(--border-accent); color: var(--border-accent); }
+  .lib-search-results { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+  .lib-search-result-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; cursor: pointer; border-bottom: 1px solid var(--border); }
+  .lib-search-result-item:last-child { border-bottom: none; }
+  .lib-search-result-item:hover { background: var(--card-active); }
+  .lib-search-cover { width: 36px; height: 36px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--card-active); }
+  .lib-search-info { flex: 1; min-width: 0; }
+  .lib-search-title { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lib-search-artist { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lib-track-cover { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--card-active); }
+  .lib-row-cover { width: 24px; height: 24px; border-radius: 5px; object-fit: cover; flex-shrink: 0; background: var(--card-active); }
 </style>
 </head>
 <body>
@@ -238,8 +248,11 @@
   <p class="label" style="margin-top:16px;">Click sounds</p>
   <div class="sound-row" id="sound-row"></div>
   <p class="label" style="margin-top:16px;">Music library</p>
-  <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Add songs by URL. Players pick up to 3 from this list for their win songs / snippets.</p>
+  <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Search for a song, or add one by URL. Players pick up to 3 from this list.</p>
   <div id="library-list" style="margin-bottom:8px;"></div>
+  <input type="text" id="library-search-input" placeholder="Search for a song or artist..." style="margin-bottom:4px;" />
+  <div id="library-search-results" style="margin-bottom:10px;"></div>
+  <p class="label" style="margin-top:10px;">Or add by URL</p>
   <input type="text" id="library-title-input" placeholder="Song title" style="margin-bottom:6px;" />
   <input type="text" id="library-url-input" placeholder="Audio file URL (mp3, wav, m4a...)" style="margin-bottom:6px;" />
   <button type="button" id="library-add-btn" class="btn-primary" style="width:100%;">Add song</button>
@@ -252,7 +265,7 @@
   <input type="file" id="import-file-input" accept="application/json" style="display:none;" />
 </div>
 <div id="app-wrap">
-  <h1>CK Darts</h1>
+  <h1>CM Darts</h1>
   <p class="subtitle">Free-for-all or 2v2 teams, with saved players and stats</p>
   <div id="snippet-zone"></div>
   <div id="app"></div>
@@ -420,8 +433,10 @@
     });
   }
 
-  var APP_VERSION = '3.0.0';
+  var APP_VERSION = '3.2.0';
   var CHANGELOG = [
+    { v: '3.2.0', notes: 'Added a searchable song picker in the Music Library (Settings) \u2014 type a song or artist and pick from a live dropdown with cover art and 30-second previews, powered by Deezer\u2019s free public catalog (no login needed, unlike Spotify which killed preview access). Manual URL entry is still there as a fallback. Cover art now shows next to songs in the picker and on the win screen.' },
+    { v: '3.1.0', notes: 'Renamed the app from CK Darts to CM Darts (title, header, and backup filename). GitHub repo and live URL moved to cm-darts as well.' },
     { v: '3.0.0', notes: 'Removed Spotify integration entirely \u2014 Spotify deprecated 30-second preview URLs across their Web API on Nov 27, 2024, so preview_url now returns null for nearly every track, for every developer, with no workaround. Replaced it with a self-hosted music library: add songs by URL in Settings, then pick up to 3 per player for their win songs/snippets. Playback is a real audio element you fully control, so autoplay is reliable.' },
     { v: '2.19.0', notes: 'Replaced the Spotify iframe embed with real audio playback: song/snippet previews now go through the ck-darts-proxy Worker (which handles the Spotify token exchange server-side, avoiding the CORS block) and play via a native audio element triggered directly from your click. This is what actually satisfies browser autoplay policy, since a cross-origin iframe never reliably did. Falls back to a manual play button if autoplay is blocked, or an "Open in Spotify" link if no 30s preview exists for that track.' },
     { v: '2.18.1', notes: 'Removed loading="lazy" from the Spotify iframe \u2014 it was deferring iframe initialization, which could push it past the moment your click grants autoplay permission. Worth a fresh test.' },
@@ -558,6 +573,63 @@
       saveTheme(DEFAULT_THEME);
     });
 
+    var LIB_PROXY_BASE = 'https://ck-darts-proxy.carter-cummins.workers.dev';
+    var searchDebounceTimer = null;
+    var searchInput = document.getElementById('library-search-input');
+    var searchResultsEl = document.getElementById('library-search-results');
+
+    function runLibrarySearch(query){
+      if (!query.trim()) {
+        searchResultsEl.innerHTML = '';
+        return;
+      }
+      searchResultsEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:6px 0;">Searching&hellip;</p>';
+      fetch(LIB_PROXY_BASE + '/search?q=' + encodeURIComponent(query))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          var results = (data && data.results) || [];
+          if (!results.length) {
+            searchResultsEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:6px 0;">No results found.</p>';
+            return;
+          }
+          searchResultsEl.innerHTML = '<div class="lib-search-results">' +
+            results.map(function(r, i){
+              var coverHtml = r.cover
+                ? '<img class="lib-search-cover" src="' + r.cover + '" alt="" />'
+                : '<div class="lib-search-cover"></div>';
+              return '<div class="lib-search-result-item" data-idx="' + i + '">' +
+                coverHtml +
+                '<div class="lib-search-info">' +
+                  '<div class="lib-search-title">' + (r.title || '').replace(/</g, '&lt;') + '</div>' +
+                  '<div class="lib-search-artist">' + (r.artist || '').replace(/</g, '&lt;') + '</div>' +
+                '</div>' +
+              '</div>';
+            }).join('') +
+          '</div>';
+          searchResultsEl.querySelectorAll('.lib-search-result-item').forEach(function(el){
+            el.addEventListener('click', function(){
+              var r = results[parseInt(el.dataset.idx, 10)];
+              var fullTitle = r.artist ? (r.artist + ' - ' + r.title) : r.title;
+              var track = addLibraryTrack(fullTitle, r.preview, r.cover);
+              if (track) {
+                searchInput.value = '';
+                searchResultsEl.innerHTML = '';
+                renderLibraryList();
+              }
+            });
+          });
+        })
+        .catch(function(){
+          searchResultsEl.innerHTML = '<p style="font-size:12px; color:var(--danger); margin:6px 0;">Search failed. Try again.</p>';
+        });
+    }
+
+    searchInput.addEventListener('input', function(){
+      clearTimeout(searchDebounceTimer);
+      var q = searchInput.value;
+      searchDebounceTimer = setTimeout(function(){ runLibrarySearch(q); }, 400);
+    });
+
     function renderLibraryList(){
       var lib = loadLibrary();
       var listEl = document.getElementById('library-list');
@@ -567,7 +639,11 @@
       }
       listEl.innerHTML = lib.map(function(t){
         var safeTitle = t.title.replace(/"/g, '&quot;');
+        var coverHtml = t.cover
+          ? '<img class="lib-row-cover" src="' + t.cover + '" alt="" />'
+          : '';
         return '<div class="chip-wrap" style="width:100%; margin-bottom:6px;">' +
+          coverHtml +
           '<span class="chip" style="cursor:default; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + safeTitle + '</span>' +
           '<button type="button" class="chip-settings library-delete-btn" data-id="' + t.id + '" aria-label="Remove ' + safeTitle + '">&#10005;</button>' +
         '</div>';
@@ -583,7 +659,7 @@
     document.getElementById('library-add-btn').addEventListener('click', function(){
       var titleInput = document.getElementById('library-title-input');
       var urlInput = document.getElementById('library-url-input');
-      var track = addLibraryTrack(titleInput.value, urlInput.value);
+      var track = addLibraryTrack(titleInput.value, urlInput.value, null);
       if (track) {
         titleInput.value = '';
         urlInput.value = '';
@@ -727,8 +803,10 @@
       lib.map(function(t){
         var checked = selectedIds.indexOf(t.id) !== -1;
         var safe = t.title.replace(/"/g, '&quot;');
+        var coverHtml = t.cover ? '<img class="lib-row-cover" src="' + t.cover + '" alt="" />' : '';
         return '<label style="display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 0; cursor:pointer;">' +
           '<input type="checkbox" class="' + idPrefix + '-track-checkbox" data-id="' + t.id + '" ' + (checked ? 'checked' : '') + ' style="width:auto;" />' +
+          coverHtml +
           safe +
         '</label>';
       }).join('') +
@@ -842,7 +920,7 @@
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'ck-darts-backup.json';
+    a.download = 'cm-darts-backup.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -856,12 +934,12 @@
       try {
         data = JSON.parse(e.target.result);
       } catch(err){
-        window.alert('That file doesn\u2019t look like a valid CK Darts backup.');
+        window.alert('That file doesn\u2019t look like a valid CM Darts backup.');
         return;
       }
       var hasAny = data && (data.roster || data.profiles || data.history || data.theme || data.library);
       if (!hasAny) {
-        window.alert('That file doesn\u2019t look like a valid CK Darts backup.');
+        window.alert('That file doesn\u2019t look like a valid CM Darts backup.');
         return;
       }
       if (!window.confirm('Import this backup? It will replace your current saved players, songs, history, theme, and music library.')) return;
@@ -1044,12 +1122,12 @@
   function saveLibrary(lib){
     try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(lib)); } catch(e){}
   }
-  function addLibraryTrack(title, url){
+  function addLibraryTrack(title, url, cover){
     title = (title || '').trim();
     url = (url || '').trim();
     if (!title || !url) return null;
     var lib = loadLibrary();
-    var track = { id: 't' + Date.now() + Math.floor(Math.random() * 1000), title: title, url: url };
+    var track = { id: 't' + Date.now() + Math.floor(Math.random() * 1000), title: title, url: url, cover: cover || null };
     lib.push(track);
     saveLibrary(lib);
     return track;
@@ -1949,7 +2027,7 @@
     var profile = getProfile(chosenName);
     var track = pickProfileTrack(profile);
     if (!track) return null;
-    return { playerName: chosenName, title: track.title, url: track.url };
+    return { playerName: chosenName, title: track.title, url: track.url, cover: track.cover || null };
   }
 
   function renderFinished(){
@@ -1963,7 +2041,9 @@
     else subLabel = 'Closed out the board';
     var songHtml = '';
     if (song) {
+      var winCoverHtml = song.cover ? '<img class="lib-track-cover" src="' + song.cover + '" alt="" style="margin:0 auto 6px; display:block;" />' : '';
       songHtml =
+        winCoverHtml +
         '<p class="label" style="text-align:center; margin-top:16px;">' + song.playerName + '&rsquo;s song</p>' +
         '<div id="win-song-embed"></div>';
     }
