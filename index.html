@@ -208,6 +208,12 @@
   .lib-search-artist { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .lib-track-cover { width: 32px; height: 32px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--card-active); }
   .lib-row-cover { width: 24px; height: 24px; border-radius: 5px; object-fit: cover; flex-shrink: 0; background: var(--card-active); }
+  @media (max-width: 480px) {
+    .menu-fab, .players-fab { padding: 9px 10px; gap: 0; }
+    .menu-fab .btn-label, .players-fab .btn-label { display: none; }
+    .menu-fab { left: 56px; }
+    .top-right-controls { gap: 6px; }
+  }
 </style>
 </head>
 <body>
@@ -220,11 +226,11 @@
 </div>
 <button type="button" id="settings-btn" class="settings-fab" aria-label="Settings">&#9881;</button>
 <div class="top-right-controls">
-  <button type="button" id="history-btn" class="players-fab" aria-label="History">&#128220; History</button>
-  <button type="button" id="stats-btn" class="players-fab" aria-label="Stats">&#128202; Stats</button>
-  <button type="button" id="players-btn" class="players-fab" aria-label="Players">&#128101; Players</button>
+  <button type="button" id="history-btn" class="players-fab" aria-label="History">&#128220; <span class="btn-label">History</span></button>
+  <button type="button" id="stats-btn" class="players-fab" aria-label="Stats">&#128202; <span class="btn-label">Stats</span></button>
+  <button type="button" id="players-btn" class="players-fab" aria-label="Players">&#128101; <span class="btn-label">Players</span></button>
 </div>
-<button type="button" id="global-menu-btn" class="menu-fab" aria-label="Main menu">&#8962; Main menu</button>
+<button type="button" id="global-menu-btn" class="menu-fab" aria-label="Main menu">&#8962; <span class="btn-label">Main menu</span></button>
 <div id="history-panel" class="overlay-panel" style="display:none;"></div>
 <div id="stats-panel" class="overlay-panel" style="display:none;"></div>
 <div id="players-panel" class="players-panel" style="display:none;"></div>
@@ -433,8 +439,9 @@
     });
   }
 
-  var APP_VERSION = '3.2.0';
+  var APP_VERSION = '3.2.1';
   var CHANGELOG = [
+    { v: '3.2.1', notes: 'Fixed the Main menu button (top-left) overlapping the History/Stats/Players pills (top-right) on narrow phone screens \u2014 those buttons now shrink to icon-only under 480px wide so there\u2019s always room for both sides.' },
     { v: '3.2.0', notes: 'Added a searchable song picker in the Music Library (Settings) \u2014 type a song or artist and pick from a live dropdown with cover art and 30-second previews, powered by Deezer\u2019s free public catalog (no login needed, unlike Spotify which killed preview access). Manual URL entry is still there as a fallback. Cover art now shows next to songs in the picker and on the win screen.' },
     { v: '3.1.0', notes: 'Renamed the app from CK Darts to CM Darts (title, header, and backup filename). GitHub repo and live URL moved to cm-darts as well.' },
     { v: '3.0.0', notes: 'Removed Spotify integration entirely \u2014 Spotify deprecated 30-second preview URLs across their Web API on Nov 27, 2024, so preview_url now returns null for nearly every track, for every developer, with no workaround. Replaced it with a self-hosted music library: add songs by URL in Settings, then pick up to 3 per player for their win songs/snippets. Playback is a real audio element you fully control, so autoplay is reliable.' },
