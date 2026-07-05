@@ -226,11 +226,13 @@
 </div>
 <button type="button" id="settings-btn" class="settings-fab" aria-label="Settings">&#9881;</button>
 <div class="top-right-controls">
+  <button type="button" id="music-btn" class="players-fab" aria-label="Music">&#127925; <span class="btn-label">Music</span></button>
   <button type="button" id="history-btn" class="players-fab" aria-label="History">&#128220; <span class="btn-label">History</span></button>
   <button type="button" id="stats-btn" class="players-fab" aria-label="Stats">&#128202; <span class="btn-label">Stats</span></button>
   <button type="button" id="players-btn" class="players-fab" aria-label="Players">&#128101; <span class="btn-label">Players</span></button>
 </div>
 <button type="button" id="global-menu-btn" class="menu-fab" aria-label="Main menu">&#8962; <span class="btn-label">Main menu</span></button>
+<div id="music-panel" class="overlay-panel" style="display:none;"></div>
 <div id="history-panel" class="overlay-panel" style="display:none;"></div>
 <div id="stats-panel" class="overlay-panel" style="display:none;"></div>
 <div id="players-panel" class="players-panel" style="display:none;"></div>
@@ -253,15 +255,6 @@
   </div>
   <p class="label" style="margin-top:16px;">Click sounds</p>
   <div class="sound-row" id="sound-row"></div>
-  <p class="label" style="margin-top:16px;">Music library</p>
-  <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Search for a song, or add one by URL. Players pick up to 3 from this list.</p>
-  <div id="library-list" style="margin-bottom:8px;"></div>
-  <input type="text" id="library-search-input" placeholder="Search for a song or artist..." style="margin-bottom:4px;" />
-  <div id="library-search-results" style="margin-bottom:10px;"></div>
-  <p class="label" style="margin-top:10px;">Or add by URL</p>
-  <input type="text" id="library-title-input" placeholder="Song title" style="margin-bottom:6px;" />
-  <input type="text" id="library-url-input" placeholder="Audio file URL (mp3, wav, m4a...)" style="margin-bottom:6px;" />
-  <button type="button" id="library-add-btn" class="btn-primary" style="width:100%;">Add song</button>
   <p class="label" style="margin-top:16px;">Backup &amp; restore</p>
   <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Export before downloading a new version of this file, then import it back &mdash; browsers don't share saved data between file downloads.</p>
   <div style="display:flex; gap:8px;">
@@ -439,8 +432,9 @@
     });
   }
 
-  var APP_VERSION = '3.2.1';
+  var APP_VERSION = '3.3.0';
   var CHANGELOG = [
+    { v: '3.3.0', notes: 'Music library is now its own tab (top-right, next to History/Stats/Players) instead of buried in Settings \u2014 easier to manage as the song list grows. Also reworked how players get songs: instead of adding to the library first then picking from a checklist, each player\u2019s edit screen now has its own search box \u2014 search and tap a result to add it directly to that player\u2019s 3 slots in one step (it\u2019s added to the shared library automatically if it wasn\u2019t already there).' },
     { v: '3.2.1', notes: 'Fixed the Main menu button (top-left) overlapping the History/Stats/Players pills (top-right) on narrow phone screens \u2014 those buttons now shrink to icon-only under 480px wide so there\u2019s always room for both sides.' },
     { v: '3.2.0', notes: 'Added a searchable song picker in the Music Library (Settings) \u2014 type a song or artist and pick from a live dropdown with cover art and 30-second previews, powered by Deezer\u2019s free public catalog (no login needed, unlike Spotify which killed preview access). Manual URL entry is still there as a fallback. Cover art now shows next to songs in the picker and on the win screen.' },
     { v: '3.1.0', notes: 'Renamed the app from CK Darts to CM Darts (title, header, and backup filename). GitHub repo and live URL moved to cm-darts as well.' },
@@ -580,100 +574,6 @@
       saveTheme(DEFAULT_THEME);
     });
 
-    var LIB_PROXY_BASE = 'https://ck-darts-proxy.carter-cummins.workers.dev';
-    var searchDebounceTimer = null;
-    var searchInput = document.getElementById('library-search-input');
-    var searchResultsEl = document.getElementById('library-search-results');
-
-    function runLibrarySearch(query){
-      if (!query.trim()) {
-        searchResultsEl.innerHTML = '';
-        return;
-      }
-      searchResultsEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:6px 0;">Searching&hellip;</p>';
-      fetch(LIB_PROXY_BASE + '/search?q=' + encodeURIComponent(query))
-        .then(function(r){ return r.json(); })
-        .then(function(data){
-          var results = (data && data.results) || [];
-          if (!results.length) {
-            searchResultsEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:6px 0;">No results found.</p>';
-            return;
-          }
-          searchResultsEl.innerHTML = '<div class="lib-search-results">' +
-            results.map(function(r, i){
-              var coverHtml = r.cover
-                ? '<img class="lib-search-cover" src="' + r.cover + '" alt="" />'
-                : '<div class="lib-search-cover"></div>';
-              return '<div class="lib-search-result-item" data-idx="' + i + '">' +
-                coverHtml +
-                '<div class="lib-search-info">' +
-                  '<div class="lib-search-title">' + (r.title || '').replace(/</g, '&lt;') + '</div>' +
-                  '<div class="lib-search-artist">' + (r.artist || '').replace(/</g, '&lt;') + '</div>' +
-                '</div>' +
-              '</div>';
-            }).join('') +
-          '</div>';
-          searchResultsEl.querySelectorAll('.lib-search-result-item').forEach(function(el){
-            el.addEventListener('click', function(){
-              var r = results[parseInt(el.dataset.idx, 10)];
-              var fullTitle = r.artist ? (r.artist + ' - ' + r.title) : r.title;
-              var track = addLibraryTrack(fullTitle, r.preview, r.cover);
-              if (track) {
-                searchInput.value = '';
-                searchResultsEl.innerHTML = '';
-                renderLibraryList();
-              }
-            });
-          });
-        })
-        .catch(function(){
-          searchResultsEl.innerHTML = '<p style="font-size:12px; color:var(--danger); margin:6px 0;">Search failed. Try again.</p>';
-        });
-    }
-
-    searchInput.addEventListener('input', function(){
-      clearTimeout(searchDebounceTimer);
-      var q = searchInput.value;
-      searchDebounceTimer = setTimeout(function(){ runLibrarySearch(q); }, 400);
-    });
-
-    function renderLibraryList(){
-      var lib = loadLibrary();
-      var listEl = document.getElementById('library-list');
-      if (!lib.length) {
-        listEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:0;">No songs added yet.</p>';
-        return;
-      }
-      listEl.innerHTML = lib.map(function(t){
-        var safeTitle = t.title.replace(/"/g, '&quot;');
-        var coverHtml = t.cover
-          ? '<img class="lib-row-cover" src="' + t.cover + '" alt="" />'
-          : '';
-        return '<div class="chip-wrap" style="width:100%; margin-bottom:6px;">' +
-          coverHtml +
-          '<span class="chip" style="cursor:default; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + safeTitle + '</span>' +
-          '<button type="button" class="chip-settings library-delete-btn" data-id="' + t.id + '" aria-label="Remove ' + safeTitle + '">&#10005;</button>' +
-        '</div>';
-      }).join('');
-      listEl.querySelectorAll('.library-delete-btn').forEach(function(b){
-        b.addEventListener('click', function(){
-          deleteLibraryTrack(b.dataset.id);
-          renderLibraryList();
-        });
-      });
-    }
-    renderLibraryList();
-    document.getElementById('library-add-btn').addEventListener('click', function(){
-      var titleInput = document.getElementById('library-title-input');
-      var urlInput = document.getElementById('library-url-input');
-      var track = addLibraryTrack(titleInput.value, urlInput.value, null);
-      if (track) {
-        titleInput.value = '';
-        urlInput.value = '';
-        renderLibraryList();
-      }
-    });
-
     document.getElementById('export-data-btn').addEventListener('click', exportAllData);
     document.getElementById('import-data-btn').addEventListener('click', function(){
       document.getElementById('import-file-input').click();
@@ -686,12 +586,86 @@
     });
   }
 
+  function toggleMusicPanel(){
+    var panel = document.getElementById('music-panel');
+    var isOpen = panel.style.display === 'block';
+    hideOtherOverlayPanels('music-panel');
+    if (!isOpen) {
+      renderMusicPanel('music-panel');
+      panel.style.display = 'block';
+    } else {
+      panel.style.display = 'none';
+    }
+  }
+
+  function renderMusicPanel(containerId){
+    var panel = document.getElementById(containerId);
+    var lib = loadLibrary();
+    panel.innerHTML =
+      '<p class="label" style="margin-top:0;">Music library</p>' +
+      '<p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Search to add songs here, then assign them to players from the Players panel.</p>' +
+      '<input type="text" id="music-search-input" placeholder="Search for a song or artist..." />' +
+      '<div id="music-search-results" style="margin-bottom:12px;"></div>' +
+      '<p class="label" style="margin-top:4px;">Or add by URL</p>' +
+      '<input type="text" id="music-title-input" placeholder="Song title" style="margin-bottom:6px;" />' +
+      '<input type="text" id="music-url-input" placeholder="Audio file URL (mp3, wav, m4a...)" style="margin-bottom:6px;" />' +
+      '<button type="button" id="music-add-btn" class="btn-primary" style="width:100%; margin-bottom:16px;">Add song</button>' +
+      '<p class="label">All songs (' + lib.length + ')</p>' +
+      '<div id="music-full-list"></div>';
+
+    function renderFullList(){
+      var listEl = document.getElementById('music-full-list');
+      var current = loadLibrary();
+      if (!current.length) {
+        listEl.innerHTML = '<div class="empty-state" style="padding:16px 0;">No songs yet. Search above to add some.</div>';
+        return;
+      }
+      listEl.innerHTML = current.map(function(t){
+        var safeTitle = t.title.replace(/"/g, '&quot;');
+        var coverHtml = t.cover ? '<img class="lib-row-cover" src="' + t.cover + '" alt="" />' : '';
+        return '<div class="chip-wrap" style="width:100%; margin-bottom:6px;">' +
+          coverHtml +
+          '<span class="chip" style="cursor:default; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + safeTitle + '</span>' +
+          '<button type="button" class="chip-settings music-delete-btn" data-id="' + t.id + '" aria-label="Remove ' + safeTitle + '">&#10005;</button>' +
+        '</div>';
+      }).join('');
+      listEl.querySelectorAll('.music-delete-btn').forEach(function(b){
+        b.addEventListener('click', function(){
+          if (window.confirm('Remove this song from the library? It will also be unassigned from any players using it.')) {
+            deleteLibraryTrack(b.dataset.id);
+            renderFullList();
+          }
+        });
+      });
+    }
+    renderFullList();
+
+    wireLibrarySearchBox('music-search-input', 'music-search-results', function(){
+      renderFullList();
+    });
+
+    document.getElementById('music-add-btn').addEventListener('click', function(){
+      var titleInput = document.getElementById('music-title-input');
+      var urlInput = document.getElementById('music-url-input');
+      var track = addLibraryTrack(titleInput.value, urlInput.value, null);
+      if (track) {
+        titleInput.value = '';
+        urlInput.value = '';
+        renderFullList();
+      }
+    });
+  }
+
+  function initMusicButton(){
+    document.getElementById('music-btn').addEventListener('click', toggleMusicPanel);
+  }
+
   function initPlayersPanel(){
     document.getElementById('players-btn').addEventListener('click', togglePlayersPanel);
   }
 
   function closeAllOverlayPanels(){
-    ['players-panel', 'settings-panel', 'history-panel', 'stats-panel'].forEach(function(id){
+    ['players-panel', 'settings-panel', 'history-panel', 'stats-panel', 'music-panel'].forEach(function(id){
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
     });
@@ -708,7 +682,7 @@
   }
 
   function hideOtherOverlayPanels(exceptId){
-    ['players-panel', 'settings-panel', 'history-panel', 'stats-panel'].forEach(function(id){
+    ['players-panel', 'settings-panel', 'history-panel', 'stats-panel', 'music-panel'].forEach(function(id){
       if (id === exceptId) return;
       var el = document.getElementById(id);
       if (el) el.style.display = 'none';
@@ -794,41 +768,53 @@
     panel.querySelectorAll('.player-row-edit').forEach(function(b){
       b.addEventListener('click', function(){
         var name = b.dataset.name;
+        var profile = getProfile(name);
         state.playersPanelEditing = name;
         state.playersPanelPendingPhoto = undefined;
+        state.playersPanelPendingTrackIds = (profile.trackIds || []).slice();
         renderPlayersPanel();
       });
     });
   }
 
-  function libraryCheckboxListHtml(idPrefix, selectedIds){
-    var lib = loadLibrary();
-    if (!lib.length) {
-      return '<p style="font-size:12px; color:var(--text-muted); margin:0 0 10px;">No songs in your music library yet. Add some in Settings first.</p>';
-    }
-    return '<div class="' + idPrefix + '-track-list" style="margin-bottom:10px;">' +
-      lib.map(function(t){
-        var checked = selectedIds.indexOf(t.id) !== -1;
-        var safe = t.title.replace(/"/g, '&quot;');
-        var coverHtml = t.cover ? '<img class="lib-row-cover" src="' + t.cover + '" alt="" />' : '';
-        return '<label style="display:flex; align-items:center; gap:8px; font-size:13px; padding:6px 0; cursor:pointer;">' +
-          '<input type="checkbox" class="' + idPrefix + '-track-checkbox" data-id="' + t.id + '" ' + (checked ? 'checked' : '') + ' style="width:auto;" />' +
-          coverHtml +
-          safe +
-        '</label>';
-      }).join('') +
-      '</div>' +
-      '<p style="font-size:11px; color:var(--text-muted); margin:0 0 10px;">Pick up to 3.</p>';
+  function songPickerHtml(idPrefix, selectedIds){
+    var chipsHtml = selectedIds.map(function(id){
+      var t = getLibraryTrack(id);
+      if (!t) return '';
+      var safe = t.title.replace(/"/g, '&quot;');
+      var coverHtml = t.cover ? '<img class="lib-row-cover" src="' + t.cover + '" alt="" />' : '';
+      return '<div class="chip-wrap" style="width:100%; margin-bottom:6px;">' +
+        coverHtml +
+        '<span class="chip" style="cursor:default; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + safe + '</span>' +
+        '<button type="button" class="chip-settings ' + idPrefix + '-remove-song-btn" data-id="' + id + '" aria-label="Remove ' + safe + '">&#10005;</button>' +
+      '</div>';
+    }).join('');
+    var remaining = 3 - selectedIds.length;
+    var searchHtml = remaining > 0
+      ? '<input type="text" id="' + idPrefix + '-song-search-input" placeholder="Search to add a song (' + remaining + ' left)..." style="margin-bottom:4px;" />' +
+        '<div id="' + idPrefix + '-song-search-results"></div>'
+      : '<p style="font-size:11px; color:var(--text-muted); margin:0;">3 songs selected &mdash; remove one to add another.</p>';
+    return '<div id="' + idPrefix + '-song-picker">' +
+      (chipsHtml || '<p style="font-size:12px; color:var(--text-muted); margin:0 0 8px;">No songs picked yet.</p>') +
+      searchHtml +
+    '</div>';
   }
 
-  function wireLibraryCheckboxLimit(container, idPrefix, max){
-    var boxes = container.querySelectorAll('.' + idPrefix + '-track-checkbox');
-    boxes.forEach(function(b){
-      b.addEventListener('change', function(){
-        var checkedCount = 0;
-        boxes.forEach(function(x){ if (x.checked) checkedCount++; });
-        if (checkedCount > max) b.checked = false;
+  function wireSongPicker(idPrefix, getSelected, setSelected, onChange){
+    var container = document.getElementById(idPrefix + '-song-picker');
+    if (!container) return;
+    container.querySelectorAll('.' + idPrefix + '-remove-song-btn').forEach(function(b){
+      b.addEventListener('click', function(){
+        var ids = getSelected().filter(function(x){ return x !== b.dataset.id; });
+        setSelected(ids);
+        onChange();
       });
+    });
+    wireLibrarySearchBox(idPrefix + '-song-search-input', idPrefix + '-song-search-results', function(track){
+      var ids = getSelected();
+      if (ids.indexOf(track.id) === -1 && ids.length < 3) ids = ids.concat([track.id]);
+      setSelected(ids);
+      onChange();
     });
   }
 
@@ -853,16 +839,21 @@
       '</div>' +
       '<input type="text" id="pp-name-input" value="' + nameSafe + '" placeholder="Name" style="margin-bottom:10px;" />' +
       '<p class="label">Win songs / snippets</p>' +
-      libraryCheckboxListHtml('pp', profile.trackIds || []) +
+      songPickerHtml('pp', state.playersPanelPendingTrackIds || profile.trackIds || []) +
       '<div style="display:flex; gap:8px; margin-top:8px;">' +
         '<button type="button" class="btn-primary" id="pp-save-btn" style="flex:1;">Save</button>' +
         '<button type="button" class="btn-danger" id="pp-delete-btn" style="flex:1;">Delete</button>' +
       '</div>';
 
-    wireLibraryCheckboxLimit(panel, 'pp', 3);
+    wireSongPicker('pp',
+      function(){ return state.playersPanelPendingTrackIds || []; },
+      function(ids){ state.playersPanelPendingTrackIds = ids; },
+      function(){ renderPlayersPanelEditForm(); }
+    );
 
     document.getElementById('pp-back-btn').addEventListener('click', function(){
       state.playersPanelEditing = null;
+      state.playersPanelPendingTrackIds = undefined;
       renderPlayersPanel();
     });
     var ppPhotoInput = document.getElementById('pp-photo-file-input');
@@ -893,22 +884,21 @@
         renameRosterPlayer(oldName, newName);
       }
       var existingProfile = getProfile(oldName);
-      var trackIds = [];
-      panel.querySelectorAll('.pp-track-checkbox').forEach(function(cb){
-        if (cb.checked) trackIds.push(cb.dataset.id);
-      });
+      var trackIds = (state.playersPanelPendingTrackIds || []).slice(0, 3);
       var profileToSave = {
-        trackIds: trackIds.slice(0, 3),
+        trackIds: trackIds,
         photo: (state.playersPanelPendingPhoto === undefined) ? (existingProfile.photo || null) : state.playersPanelPendingPhoto
       };
       saveProfile(newName, profileToSave);
       state.playersPanelEditing = null;
+      state.playersPanelPendingTrackIds = undefined;
       renderPlayersPanel();
     });
     document.getElementById('pp-delete-btn').addEventListener('click', function(){
       if (window.confirm('Remove ' + name + ' from saved players? Their past game history and stats will be kept.')) {
         deleteRosterPlayer(name);
         state.playersPanelEditing = null;
+        state.playersPanelPendingTrackIds = undefined;
         renderPlayersPanel();
       }
     });
@@ -1158,6 +1148,68 @@
     for (var i = 0; i < lib.length; i++) { if (lib[i].id === id) return lib[i]; }
     return null;
   }
+  function findLibraryTrackByUrl(url){
+    var lib = loadLibrary();
+    for (var i = 0; i < lib.length; i++) { if (lib[i].url === url) return lib[i]; }
+    return null;
+  }
+  var LIB_PROXY_BASE = 'https://ck-darts-proxy.carter-cummins.workers.dev';
+  function wireLibrarySearchBox(inputId, resultsId, onSelect){
+    var input = document.getElementById(inputId);
+    var resultsEl = document.getElementById(resultsId);
+    if (!input || !resultsEl) return;
+    var debounceTimer = null;
+
+    function runSearch(query){
+      if (!query.trim()) {
+        resultsEl.innerHTML = '';
+        return;
+      }
+      resultsEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:6px 0;">Searching&hellip;</p>';
+      fetch(LIB_PROXY_BASE + '/search?q=' + encodeURIComponent(query))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+          var results = (data && data.results) || [];
+          if (!results.length) {
+            resultsEl.innerHTML = '<p style="font-size:12px; color:var(--text-muted); margin:6px 0;">No results found.</p>';
+            return;
+          }
+          resultsEl.innerHTML = '<div class="lib-search-results">' +
+            results.map(function(r, i){
+              var coverHtml = r.cover
+                ? '<img class="lib-search-cover" src="' + r.cover + '" alt="" />'
+                : '<div class="lib-search-cover"></div>';
+              return '<div class="lib-search-result-item" data-idx="' + i + '">' +
+                coverHtml +
+                '<div class="lib-search-info">' +
+                  '<div class="lib-search-title">' + (r.title || '').replace(/</g, '&lt;') + '</div>' +
+                  '<div class="lib-search-artist">' + (r.artist || '').replace(/</g, '&lt;') + '</div>' +
+                '</div>' +
+              '</div>';
+            }).join('') +
+          '</div>';
+          resultsEl.querySelectorAll('.lib-search-result-item').forEach(function(el){
+            el.addEventListener('click', function(){
+              var r = results[parseInt(el.dataset.idx, 10)];
+              var fullTitle = r.artist ? (r.artist + ' - ' + r.title) : r.title;
+              var track = findLibraryTrackByUrl(r.preview) || addLibraryTrack(fullTitle, r.preview, r.cover);
+              input.value = '';
+              resultsEl.innerHTML = '';
+              if (track) onSelect(track);
+            });
+          });
+        })
+        .catch(function(){
+          resultsEl.innerHTML = '<p style="font-size:12px; color:var(--danger); margin:6px 0;">Search failed. Try again.</p>';
+        });
+    }
+
+    input.addEventListener('input', function(){
+      clearTimeout(debounceTimer);
+      var q = input.value;
+      debounceTimer = setTimeout(function(){ runSearch(q); }, 400);
+    });
+  }
   function profileHasAudio(profile){
     return !!(profile.trackIds && profile.trackIds.length > 0);
   }
@@ -1239,6 +1291,7 @@
     firstIndex: 0,
     editingPlayer: null,
     pendingPhoto: undefined,
+    pendingTrackIds: undefined,
     playersPanelEditing: null,
     playersPanelPendingPhoto: undefined,
     winner: null,
@@ -1269,6 +1322,7 @@
   function openEditPlayer(name){
     state.editingPlayer = name;
     state.pendingPhoto = undefined;
+    state.pendingTrackIds = (getProfile(name).trackIds || []).slice();
     render();
   }
 
@@ -1282,6 +1336,7 @@
 
   function closeEditPlayer(){
     state.editingPlayer = null;
+    state.pendingTrackIds = undefined;
     render();
   }
 
@@ -1668,7 +1723,7 @@
             '</div>' +
             '<input type="text" id="edit-name-input" value="' + editSafe + '" placeholder="Name" style="margin-bottom:10px;" />' +
             '<p class="label">Win songs / snippets</p>' +
-            libraryCheckboxListHtml('edit', profile.trackIds || []) +
+            songPickerHtml('edit', state.pendingTrackIds || profile.trackIds || []) +
             '<div style="display:flex; gap:8px; margin-top:4px;">' +
               '<button type="button" class="btn-primary" id="edit-save-btn" style="flex:1;">Save</button>' +
               '<button type="button" class="btn-danger" id="edit-delete-btn" style="flex:1;">Delete</button>' +
@@ -1735,7 +1790,11 @@
     }
     var editPanel = document.getElementById('edit-panel');
     if (editPanel) {
-      wireLibraryCheckboxLimit(editPanel, 'edit', 3);
+      wireSongPicker('edit',
+        function(){ return state.pendingTrackIds || []; },
+        function(ids){ state.pendingTrackIds = ids; },
+        function(){ render(); }
+      );
       var editPhotoInput = document.getElementById('edit-photo-file-input');
       document.getElementById('edit-photo-upload-btn').addEventListener('click', function(){
         editPhotoInput.click();
@@ -1764,12 +1823,9 @@
           renameRosterPlayer(oldName, newName);
         }
         var existingProfile = getProfile(oldName);
-        var trackIds = [];
-        editPanel.querySelectorAll('.edit-track-checkbox').forEach(function(cb){
-          if (cb.checked) trackIds.push(cb.dataset.id);
-        });
+        var trackIds = (state.pendingTrackIds || []).slice(0, 3);
         var profileToSave = {
-          trackIds: trackIds.slice(0, 3),
+          trackIds: trackIds,
           photo: (state.pendingPhoto === undefined) ? (existingProfile.photo || null) : state.pendingPhoto
         };
         saveProfile(newName, profileToSave);
@@ -2379,6 +2435,7 @@
   refreshRosterDatalist();
   initFooter();
   initSettingsPanel();
+  initMusicButton();
   initPlayersPanel();
   initHistoryStatsButtons();
   initGlobalMenuButton();
