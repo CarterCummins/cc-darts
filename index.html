@@ -101,6 +101,8 @@
   .reset-btn { width: 100%; margin-top: 20px; }
   .finish-wrap { text-align: center; padding: 40px 0; }
   .trophy { font-size: 48px; margin-bottom: 12px; }
+  .winner-avatars { display: flex; justify-content: center; gap: 10px; margin-bottom: 8px; }
+  .winner-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--border-accent); }
   .winner-name { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
   .winner-sub { font-size: 14px; color: var(--text-secondary); margin: 0 0 24px; }
   .empty-state { text-align: center; color: var(--text-muted); font-size: 14px; padding: 40px 0; }
@@ -181,7 +183,6 @@
   .menu-fab { position: fixed; top: 14px; left: 60px; z-index: 50; display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 22px; font-size: 14px; font-weight: 500; }
   .top-right-controls { position: fixed; top: 14px; right: 14px; z-index: 50; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: calc(100vw - 28px); }
   .players-fab { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 22px; font-size: 14px; font-weight: 500; }
-  .settings-panel { position: fixed; top: 60px; left: 14px; z-index: 50; width: 300px; max-height: 82vh; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
   .settings-panel label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
   .settings-panel input[type="color"] { width: 100%; height: 36px; padding: 2px; margin-top: 4px; cursor: pointer; }
   .settings-section-heading { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
@@ -224,6 +225,7 @@
     .dart-cell-mults { gap: 3px; margin-top: 3px; }
   }
   .players-fab.tab-active { border: 2px solid var(--border-accent); color: var(--border-accent); }
+  .settings-fab.tab-active { border: 2px solid var(--border-accent); color: var(--border-accent); }
   .dart-keypad { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; padding: 10px; border-radius: var(--radius); }
   .dart-cell { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; text-align: center; }
   .dart-cell-mults { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
@@ -281,10 +283,10 @@
     animation: glowFadeBox 3.2s ease-in-out infinite;
     will-change: opacity;
   }
-  .player-card, .metric-card, .history-item, .game-card, .edit-panel, .team-block, .settings-panel {
+  .player-card, .metric-card, .history-item, .game-card, .edit-panel, .team-block {
     position: relative;
   }
-  .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .edit-panel::after, .team-block::after, .settings-panel::after {
+  .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .edit-panel::after, .team-block::after {
     content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
     box-shadow: 0 0 16px 3px var(--box-glow-color);
     animation: glowFadeBox 3.2s ease-in-out infinite;
@@ -297,12 +299,12 @@
     animation: glowFadeBoxSubtle 3.2s ease-in-out infinite;
     will-change: opacity;
   }
-  .player-card button::after, .metric-card button::after, .history-item button::after, .edit-panel button::after, .team-block button::after, .settings-panel button::after, .changelog-panel button::after,
+  .player-card button::after, .metric-card button::after, .history-item button::after, .edit-panel button::after, .team-block button::after, .changelog-panel button::after,
   .dart-keypad button::after, .atc-board button::after, .cricket-target-grid button::after {
     content: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    button::after, #app::after, .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .settings-panel::after, .edit-panel::after, .team-block::after, .changelog-panel::after, .snippet-box.glow::after {
+    button::after, #app::after, .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .edit-panel::after, .team-block::after, .changelog-panel::after, .snippet-box.glow::after {
       animation: none !important;
       opacity: 0.4 !important;
     }
@@ -326,44 +328,6 @@
   <button type="button" id="players-btn" class="players-fab" aria-label="Players">&#128101; <span class="btn-label">Players</span></button>
 </div>
 <button type="button" id="global-menu-btn" class="menu-fab" aria-label="Main menu">&#8962; <span class="btn-label">Main menu</span></button>
-<div id="settings-panel" class="settings-panel" style="display:none;">
-  <p class="settings-section-heading">Appearance</p>
-  <p class="label" style="margin-top:0;">Presets</p>
-  <div class="theme-swatch-grid" id="theme-swatch-grid"></div>
-  <p class="label">Custom</p>
-  <label>Background
-    <input type="color" id="theme-bg" />
-  </label>
-  <label>Trim &middot; cards and borders
-    <input type="color" id="theme-card" />
-  </label>
-  <label>Accent color
-    <input type="color" id="theme-accent" />
-  </label>
-  <label>Button glow color
-    <input type="color" id="theme-button-glow" />
-  </label>
-  <label>Box glow color
-    <input type="color" id="theme-box-glow" />
-  </label>
-  <div style="display:flex; gap:8px; margin-top:10px;">
-    <button type="button" id="theme-reset" style="flex:1;">Reset</button>
-    <button type="button" id="theme-close" class="btn-primary" style="flex:1;">Done</button>
-  </div>
-  <p class="settings-section-heading">Sound</p>
-  <p class="label" style="margin-top:0;">Click sounds</p>
-  <div class="sound-row" id="sound-row"></div>
-  <label style="margin-top:10px;">Volume
-    <input type="range" id="sound-volume-slider" min="0" max="100" style="width:100%; margin-top:4px;" />
-  </label>
-  <p class="settings-section-heading">Backup &amp; restore</p>
-  <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Export before downloading a new version of this file, then import it back &mdash; browsers don't share saved data between file downloads.</p>
-  <div style="display:flex; gap:8px;">
-    <button type="button" id="export-data-btn" style="flex:1;">Export</button>
-    <button type="button" id="import-data-btn" style="flex:1;">Import</button>
-  </div>
-  <input type="file" id="import-file-input" accept="application/json" style="display:none;" />
-</div>
 
 <div id="app-wrap">
   <h1>CC Darts</h1>
@@ -602,8 +566,9 @@
     });
   }
 
-  var APP_VERSION = '4.3.0';
+  var APP_VERSION = '4.4.0';
   var CHANGELOG = [
+    { v: '4.4.0', notes: 'Win screen now shows the winner\u2019s profile photo above the trophy \u2014 only if they actually have one set, no blank placeholder circles. Settings moved out of the floating popout and into its own full page, matching Music/History/Stats/Players (same gear icon, tap it to switch there). Fixed a "429 Too Many Requests" error from GitHub that could hit the live app link under concurrent traffic: the delivery Worker was still pointed at the old ck-darts repo name (bouncing through a redirect on every load) and only cached for 30 seconds, so several people opening the link around the same time could exhaust GitHub\u2019s rate limit. Repointed it straight at the current repo and bumped the cache to an hour.' },
     { v: '4.3.0', notes: 'Button/box glow now animates opacity on a static shadow layer instead of animating the shadow itself \u2014 much smoother, no more fragmented/laggy pulsing. Rebalanced glow placement: the outer app card gets the glow trim; the dart pad, Around the Clock board, and Cricket grid don\u2019t glow at all since that just added clutter on dense button grids. Added a Volume slider under Click sounds in Settings so you can turn sound effects up or down without muting them. Fixed a bug where typing a player\u2019s name and then adding their first song (either when creating a new player or editing one) would wipe out the name you\u2019d just typed. Countdown games (200/501/301/170) now show how much you need left to win after every single dart, not just at the end of your turn \u2014 on a bust it correctly reflects back to what you started the turn with, since your score doesn\u2019t actually change until the turn settles.' },
     { v: '4.2.1', notes: 'Rebalanced the glow placement based on feedback: the outer app card now gets the glow trim around its edge. The dart pad, Around the Clock board, and Cricket number grid no longer glow at all \u2014 those are dense button grids where the glow just added clutter. Snippet/win-song boxes keep their glow as before.' },
     { v: '4.2.0', notes: 'Big polish pass: button glow is now very subtle, while boxes/cards get a stronger, separately-customizable glow (new Button glow color and Box glow color pickers in Settings). Changelog now has its own subtle-glow box and loads 5 entries at a time. Fixed the win screen showing the song info twice, and fixed the win song overlapping with a still-playing 50+ snippet from the same game \u2014 winning now always cuts the snippet immediately. 50+ snippets now also play for 501 and 301, not just 200. The dart pad: tap the number itself for a single, x2/x3 stay separate, and the bullseye is labeled Bullseye with Green (25) / Red (50) color dots. Around the Clock is now a clickable dartboard-style number grid instead of a hit-count entry, with Miss and Undo. Cricket got a Miss button. Removed the manual "add song by URL" option from the Music tab since search covers it. Settings got reorganized into clear sections and is wider; the top-bar collapse to icon-only now kicks in earlier so it doesn\u2019t overlap on resized desktop windows, not just phones. Player photo upload now supports drag-and-drop. Mobile screens show the dart pad in a denser 4-column layout so more of it fits without scrolling (desktop layout unchanged).' },
@@ -686,11 +651,43 @@
     document.documentElement.style.setProperty('--button-glow-color', t.buttonGlow || t.accent);
     document.documentElement.style.setProperty('--box-glow-color', t.boxGlow || t.accent);
   }
-  function initSettingsPanel(){
+  function initTheme(){
+    applyTheme(loadTheme());
+  }
+
+  function initSettingsButton(){
+    document.getElementById('settings-btn').addEventListener('click', function(){ setActiveView('settings'); });
+  }
+
+  function renderSettingsTab(containerId){
+    var panel = document.getElementById(containerId);
     var theme = loadTheme();
-    applyTheme(theme);
-    var btn = document.getElementById('settings-btn');
-    var panel = document.getElementById('settings-panel');
+
+    panel.innerHTML =
+      '<div class="settings-panel">' +
+      '<p class="settings-section-heading" style="margin-top:0;">Appearance</p>' +
+      '<p class="label" style="margin-top:0;">Presets</p>' +
+      '<div class="theme-swatch-grid" id="theme-swatch-grid"></div>' +
+      '<p class="label">Custom</p>' +
+      '<label>Background<input type="color" id="theme-bg" /></label>' +
+      '<label>Trim &middot; cards and borders<input type="color" id="theme-card" /></label>' +
+      '<label>Accent color<input type="color" id="theme-accent" /></label>' +
+      '<label>Button glow color<input type="color" id="theme-button-glow" /></label>' +
+      '<label>Box glow color<input type="color" id="theme-box-glow" /></label>' +
+      '<button type="button" id="theme-reset" style="width:100%; margin-top:6px;">Reset appearance</button>' +
+      '<p class="settings-section-heading">Sound</p>' +
+      '<p class="label" style="margin-top:0;">Click sounds</p>' +
+      '<div class="sound-row" id="sound-row"></div>' +
+      '<label style="margin-top:10px;">Volume<input type="range" id="sound-volume-slider" min="0" max="100" style="width:100%; margin-top:4px;" /></label>' +
+      '<p class="settings-section-heading">Backup &amp; restore</p>' +
+      '<p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Export before downloading a new version of this file, then import it back &mdash; browsers don\'t share saved data between file downloads.</p>' +
+      '<div style="display:flex; gap:8px;">' +
+        '<button type="button" id="export-data-btn" style="flex:1;">Export</button>' +
+        '<button type="button" id="import-data-btn" style="flex:1;">Import</button>' +
+      '</div>' +
+      '<input type="file" id="import-file-input" accept="application/json" style="display:none;" />' +
+      '</div>';
+
     var bgInput = document.getElementById('theme-bg');
     var cardInput = document.getElementById('theme-card');
     var accentInput = document.getElementById('theme-accent');
@@ -746,13 +743,6 @@
       setClickVolume(parseInt(volumeSlider.value, 10) / 100);
     });
 
-    btn.addEventListener('click', function(){
-      var isOpen = panel.style.display === 'block';
-      panel.style.display = isOpen ? 'none' : 'block';
-    });
-    document.getElementById('theme-close').addEventListener('click', function(){
-      panel.style.display = 'none';
-    });
     function updateTheme(){
       var t = { bg: bgInput.value, card: cardInput.value, accent: accentInput.value, buttonGlow: buttonGlowInput.value, boxGlow: boxGlowInput.value };
       applyTheme(t);
@@ -794,7 +784,6 @@
     state.activeView = view;
     state.playersPanelEditing = null;
     if (view === 'history') state.historyExpanded = false;
-    document.getElementById('settings-panel').style.display = 'none';
     render();
   }
 
@@ -2433,6 +2422,13 @@
     if (game.type === 'countdown') subLabel = 'Checked out from ' + game.startScore;
     else if (game.type === 'atc') subLabel = 'Finished around the clock';
     else subLabel = 'Closed out the board';
+    var winnerNames = state.mode === 'ffa' ? [state.winner] : (state.winnerTeamMembers || []);
+    var winnerPhotos = winnerNames.filter(function(n){ return getProfile(n).photo; });
+    var avatarsHtml = winnerPhotos.length
+      ? '<div class="winner-avatars">' + winnerPhotos.map(function(n){
+          return '<img class="winner-avatar" src="' + getProfile(n).photo + '" alt="" />';
+        }).join('') + '</div>'
+      : '';
     var songHtml = '';
     if (song) {
       var winCoverHtml = song.cover ? '<img class="lib-track-cover" src="' + song.cover + '" alt="" style="margin:16px auto 6px; display:block;" />' : '';
@@ -2446,6 +2442,7 @@
       '<div class="finish-wrap" style="position:relative;">' +
         '<canvas id="fireworks-canvas" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>' +
         '<div style="position:relative; z-index:1;">' +
+          avatarsHtml +
           '<div class="trophy">🏆</div>' +
           '<p class="winner-name">' + label + ' WINS!</p>' +
           '<p class="winner-sub">' + subLabel + '</p>' +
@@ -2734,6 +2731,7 @@
     else if (state.activeView === 'stats') renderStatsTab('app');
     else if (state.activeView === 'players') renderPlayersPanel('app');
     else if (state.activeView === 'music') renderMusicPanel('app');
+    else if (state.activeView === 'settings') renderSettingsTab('app');
     else renderPlayTab();
   }
 
@@ -2745,6 +2743,11 @@
       if (state.activeView === view) btn.classList.add('tab-active');
       else btn.classList.remove('tab-active');
     });
+    var settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+      if (state.activeView === 'settings') settingsBtn.classList.add('tab-active');
+      else settingsBtn.classList.remove('tab-active');
+    }
   }
 
   var changelogVisibleCount = 5;
@@ -2787,7 +2790,8 @@
 
   refreshRosterDatalist();
   initFooter();
-  initSettingsPanel();
+  initTheme();
+  initSettingsButton();
   initMusicButton();
   initPlayersPanel();
   initHistoryStatsButtons();
