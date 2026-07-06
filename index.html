@@ -230,6 +230,15 @@
   }
   .snippet-box.glow { animation: slowGlow 3.2s ease-in-out infinite; text-align: center; }
   .snippet-cover { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; display: block; margin: 0 auto; background: var(--card-active); }
+  .snippet-title { font-size: 13px; font-weight: 500; margin: 8px 0 0; text-align: center; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  button, .player-card, .metric-card, .history-item, .game-card, .dart-cell, .chip, .theme-swatch, .edit-panel, .team-block {
+    animation: slowGlow 3.2s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    button, .player-card, .metric-card, .history-item, .game-card, .dart-cell, .chip, .theme-swatch, .edit-panel, .team-block, .snippet-box.glow {
+      animation: none !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -307,7 +316,8 @@
   ];
 
   var SOUND_KEY = 'darts_sound_v1';
-  var SOUND_OPTIONS = ['none', 'ping', 'doing', 'splat', 'mush', 'acid'];
+  var NEW_PLAYER_SENTINEL = '\u0000__new_player__\u0000';
+  var SOUND_OPTIONS = ['none', 'ping', 'doing', 'splat', 'mush', 'acid', 'wub', 'ring'];
   var audioCtx = null;
 
   function loadSoundSetting(){
@@ -418,6 +428,48 @@
     osc.start(t);
     osc.stop(t + 0.3);
   }
+  function playWub(ctx){
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(75, t);
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.Q.value = 14;
+    filter.frequency.setValueAtTime(180, t);
+    filter.frequency.linearRampToValueAtTime(1400, t + 0.06);
+    filter.frequency.linearRampToValueAtTime(140, t + 0.12);
+    filter.frequency.linearRampToValueAtTime(1200, t + 0.18);
+    filter.frequency.linearRampToValueAtTime(110, t + 0.26);
+    filter.frequency.linearRampToValueAtTime(900, t + 0.32);
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.001, t);
+    gain.gain.exponentialRampToValueAtTime(0.32, t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.36);
+    osc.connect(filter).connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.38);
+  }
+  function playRing(ctx){
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1900, t);
+    var gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    var pulseCount = 4;
+    var pulseDur = 0.045;
+    var gapDur = 0.03;
+    for (var i = 0; i < pulseCount; i++) {
+      var start = t + i * (pulseDur + gapDur);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.2, start + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + pulseDur);
+    }
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + pulseCount * (pulseDur + gapDur) + 0.05);
+  }
   function playClickSound(type){
     var kind = type || loadSoundSetting();
     if (kind === 'none') return;
@@ -429,6 +481,8 @@
       else if (kind === 'splat') playSplat(ctx);
       else if (kind === 'mush') playMush(ctx);
       else if (kind === 'acid') playAcid(ctx);
+      else if (kind === 'wub') playWub(ctx);
+      else if (kind === 'ring') playRing(ctx);
     }
     if (ctx.state === 'suspended' && ctx.resume) {
       ctx.resume().then(fire).catch(fire);
@@ -444,8 +498,9 @@
     });
   }
 
-  var APP_VERSION = '4.0.0';
+  var APP_VERSION = '4.1.0';
   var CHANGELOG = [
+    { v: '4.1.0', notes: 'Creating a player in the Players tab now lets you add a photo and songs right away instead of adding the name first and editing after. The slow glow effect from the 50+ snippet box now runs across buttons and cards throughout the app. Win screen is more exciting ("Matt WINS!") and just shows the song info + art without the possessive label. The 50+ snippet box now shows the song title, centered under the art. The win song stops playing as soon as you leave the win screen for another tab or game. History only loads the last 5 games with a "View More" button for the rest. Added two new click sounds in Settings: Wub (a synthesized dubstep-style bass wobble) and Ring (a synthesized pulsing alarm-style tone).' },
     { v: '4.0.0', notes: 'Big update: (1) Countdown scoring is now a tap-to-score dart keypad \u2014 pick a number and a \u00d71/\u00d72/\u00d73 multiplier (plus Bull and Miss) instead of typing a total; the app does the math. Added a universal Undo button (countdown, Around the Clock, and Cricket) to fix a misclick. (2) The 50+ snippet now triggers off your full 3-dart turn total (over 70 combined) instead of any single throw, since a fast turn could otherwise trigger it repeatedly \u2014 snippet length bumped to 15 seconds. (3) Music/History/Stats/Players are now full pages instead of small popouts, so there\u2019s room for more detail and they actually fit the screen. (4) You can add a new player directly from the Players tab. (5) The 50+ snippet box no longer shows a name \u2014 just album art with a slow glowing highlight. Win-screen album art is much bigger. Songs no longer repeat back-to-back for the same player, and the cap per player is now 5 songs instead of 3. (6) Removed the scattered "clear player stats" buttons from History and Stats \u2014 Delete Player now only lives in the Players tab. (7) Stats now show average points per dart, both per-player and overall.' },
     { v: '3.3.1', notes: 'Renamed the app from CM Darts to CC Darts (title, header, and backup filename).' },
     { v: '3.3.0', notes: 'Music library is now its own tab (top-right, next to History/Stats/Players) instead of buried in Settings \u2014 easier to manage as the song list grows. Also reworked how players get songs: instead of adding to the library first then picking from a checklist, each player\u2019s edit screen now has its own search box \u2014 search and tap a result to add it directly to that player\u2019s 3 slots in one step (it\u2019s added to the shared library automatically if it wasn\u2019t already there).' },
@@ -604,9 +659,10 @@
   }
 
   function setActiveView(view){
+    if (state.stage === 'finished' && view !== 'play') stopAudio('win-song-embed');
     state.activeView = view;
     state.playersPanelEditing = null;
-    state.playersPanelAdding = false;
+    if (view === 'history') state.historyExpanded = false;
     document.getElementById('settings-panel').style.display = 'none';
     render();
   }
@@ -714,45 +770,20 @@
       '</div>';
     }).join('');
 
-    var addFormHtml = state.playersPanelAdding
-      ? '<div class="edit-panel" style="margin-top:0; margin-bottom:16px;">' +
-          '<input type="text" id="pp-add-name-input" placeholder="Player name" style="margin-bottom:8px;" />' +
-          '<div style="display:flex; gap:8px;">' +
-            '<button type="button" class="btn-primary" id="pp-add-save-btn" style="flex:1;">Add</button>' +
-            '<button type="button" id="pp-add-cancel-btn" style="flex:1;">Cancel</button>' +
-          '</div>' +
-        '</div>'
-      : '<button type="button" class="btn-primary" id="pp-add-open-btn" style="width:100%; margin-bottom:16px;">+ Add player</button>';
+    var addFormHtml = '<button type="button" class="btn-primary" id="pp-add-open-btn" style="width:100%; margin-bottom:16px;">+ Add player</button>';
 
     panel.innerHTML =
       '<p class="label" style="margin-top:0;">Players</p>' +
       addFormHtml +
       (roster.length ? rows : '<div class="empty-state" style="padding:16px 0;">No saved players yet.</div>');
 
-    if (state.playersPanelAdding) {
-      var addInput = document.getElementById('pp-add-name-input');
-      addInput.focus();
-      document.getElementById('pp-add-save-btn').addEventListener('click', function(){
-        var newName = (addInput.value || '').trim();
-        if (!newName) return;
-        addToRoster([newName]);
-        state.playersPanelAdding = false;
-        renderPlayersPanel(containerId);
-      });
-      addInput.addEventListener('keydown', function(e){
-        if (e.key === 'Enter') document.getElementById('pp-add-save-btn').click();
-      });
-      document.getElementById('pp-add-cancel-btn').addEventListener('click', function(){
-        state.playersPanelAdding = false;
-        renderPlayersPanel(containerId);
-      });
-    } else {
-      var openBtn = document.getElementById('pp-add-open-btn');
-      if (openBtn) openBtn.addEventListener('click', function(){
-        state.playersPanelAdding = true;
-        renderPlayersPanel(containerId);
-      });
-    }
+    var openBtn = document.getElementById('pp-add-open-btn');
+    if (openBtn) openBtn.addEventListener('click', function(){
+      state.playersPanelEditing = NEW_PLAYER_SENTINEL;
+      state.playersPanelPendingPhoto = undefined;
+      state.playersPanelPendingTrackIds = [];
+      renderPlayersPanel(containerId);
+    });
 
     panel.querySelectorAll('.player-row-edit').forEach(function(b){
       b.addEventListener('click', function(){
@@ -810,16 +841,19 @@
   function renderPlayersPanelEditForm(containerId){
     var panel = document.getElementById(containerId);
     var name = state.playersPanelEditing;
-    var profile = getProfile(name);
-    var nameSafe = name.replace(/"/g, '&quot;');
+    var isNew = name === NEW_PLAYER_SENTINEL;
+    var profile = isNew ? { trackIds: [], photo: null } : getProfile(name);
+    var nameSafe = isNew ? '' : name.replace(/"/g, '&quot;');
+    var headerLabel = isNew ? 'Add player' : 'Edit player';
+    var currentPhoto = (state.playersPanelPendingPhoto !== undefined) ? state.playersPanelPendingPhoto : profile.photo;
 
     panel.innerHTML =
       '<p class="label" style="margin-top:0; display:flex; align-items:center; justify-content:space-between;">' +
-        '<span>Edit player</span>' +
+        '<span>' + headerLabel + '</span>' +
         '<button type="button" id="pp-back-btn" class="chip-settings" aria-label="Back to list">&#8592; Back</button>' +
       '</p>' +
       '<div class="photo-row">' +
-        '<div id="pp-photo-preview-wrap">' + avatarHtml(profile.photo, name) + '</div>' +
+        '<div id="pp-photo-preview-wrap">' + avatarHtml(currentPhoto, nameSafe) + '</div>' +
         '<div class="photo-row-actions">' +
           '<button type="button" id="pp-photo-upload-btn">Upload photo</button>' +
           '<button type="button" id="pp-photo-remove-btn" class="btn-danger">Remove photo</button>' +
@@ -830,8 +864,10 @@
       '<p class="label">Win songs / snippets</p>' +
       songPickerHtml('pp', state.playersPanelPendingTrackIds || profile.trackIds || []) +
       '<div style="display:flex; gap:8px; margin-top:8px;">' +
-        '<button type="button" class="btn-primary" id="pp-save-btn" style="flex:1;">Save</button>' +
-        '<button type="button" class="btn-danger" id="pp-delete-btn" style="flex:1;">Delete</button>' +
+        '<button type="button" class="btn-primary" id="pp-save-btn" style="flex:1;">' + (isNew ? 'Add player' : 'Save') + '</button>' +
+        (isNew
+          ? '<button type="button" id="pp-cancel-btn" style="flex:1;">Cancel</button>'
+          : '<button type="button" class="btn-danger" id="pp-delete-btn" style="flex:1;">Delete</button>') +
       '</div>';
 
     wireSongPicker('pp',
@@ -840,11 +876,17 @@
       function(){ renderPlayersPanelEditForm(containerId); }
     );
 
-    document.getElementById('pp-back-btn').addEventListener('click', function(){
+    function resetPendingAndBack(){
       state.playersPanelEditing = null;
       state.playersPanelPendingTrackIds = undefined;
+      state.playersPanelPendingPhoto = undefined;
       renderPlayersPanel(containerId);
-    });
+    }
+
+    document.getElementById('pp-back-btn').addEventListener('click', resetPendingAndBack);
+    if (isNew) {
+      document.getElementById('pp-cancel-btn').addEventListener('click', resetPendingAndBack);
+    }
     var ppPhotoInput = document.getElementById('pp-photo-file-input');
     document.getElementById('pp-photo-upload-btn').addEventListener('click', function(){
       ppPhotoInput.click();
@@ -855,42 +897,58 @@
       resizeImageToDataUrl(file, 160, function(dataUrl){
         if (!dataUrl) return;
         state.playersPanelPendingPhoto = dataUrl;
-        var nameNow = document.getElementById('pp-name-input').value || name;
+        var nameNow = document.getElementById('pp-name-input').value || nameSafe;
         document.getElementById('pp-photo-preview-wrap').innerHTML = avatarHtml(dataUrl, nameNow);
       });
       e.target.value = '';
     });
     document.getElementById('pp-photo-remove-btn').addEventListener('click', function(){
       state.playersPanelPendingPhoto = null;
-      var nameNow = document.getElementById('pp-name-input').value || name;
+      var nameNow = document.getElementById('pp-name-input').value || nameSafe;
       document.getElementById('pp-photo-preview-wrap').innerHTML = avatarHtml(null, nameNow);
     });
     document.getElementById('pp-save-btn').addEventListener('click', function(){
-      var oldName = name;
       var newNameRaw = document.getElementById('pp-name-input').value;
-      var newName = (newNameRaw || '').trim() || oldName;
-      if (newName.toLowerCase() !== oldName.toLowerCase()) {
-        renameRosterPlayer(oldName, newName);
-      }
-      var existingProfile = getProfile(oldName);
+      var newName = (newNameRaw || '').trim();
       var trackIds = (state.playersPanelPendingTrackIds || []).slice(0, 5);
-      var profileToSave = {
-        trackIds: trackIds,
-        photo: (state.playersPanelPendingPhoto === undefined) ? (existingProfile.photo || null) : state.playersPanelPendingPhoto
-      };
-      saveProfile(newName, profileToSave);
-      state.playersPanelEditing = null;
-      state.playersPanelPendingTrackIds = undefined;
-      renderPlayersPanel(containerId);
-    });
-    document.getElementById('pp-delete-btn').addEventListener('click', function(){
-      if (window.confirm('Remove ' + name + ' from saved players? Their past game history and stats will be kept.')) {
-        deleteRosterPlayer(name);
-        state.playersPanelEditing = null;
-        state.playersPanelPendingTrackIds = undefined;
-        renderPlayersPanel(containerId);
+      if (isNew) {
+        if (!newName) {
+          document.getElementById('pp-name-input').focus();
+          return;
+        }
+        var lower = newName.toLowerCase();
+        var dup = loadRoster().some(function(r){ return r.toLowerCase() === lower; });
+        if (dup) {
+          window.alert('A player named "' + newName + '" already exists.');
+          return;
+        }
+        addToRoster([newName]);
+        saveProfile(newName, {
+          trackIds: trackIds,
+          photo: (state.playersPanelPendingPhoto === undefined) ? null : state.playersPanelPendingPhoto
+        });
+      } else {
+        var oldName = name;
+        newName = newName || oldName;
+        if (newName.toLowerCase() !== oldName.toLowerCase()) {
+          renameRosterPlayer(oldName, newName);
+        }
+        var existingProfile = getProfile(oldName);
+        saveProfile(newName, {
+          trackIds: trackIds,
+          photo: (state.playersPanelPendingPhoto === undefined) ? (existingProfile.photo || null) : state.playersPanelPendingPhoto
+        });
       }
+      resetPendingAndBack();
     });
+    if (!isNew) {
+      document.getElementById('pp-delete-btn').addEventListener('click', function(){
+        if (window.confirm('Remove ' + name + ' from saved players? Their past game history and stats will be kept.')) {
+          deleteRosterPlayer(name);
+          resetPendingAndBack();
+        }
+      });
+    }
   }
 
   function exportAllData(){
@@ -1295,14 +1353,14 @@
     pendingPhoto: undefined,
     pendingTrackIds: undefined,
     playersPanelEditing: null,
-    playersPanelAdding: false,
     playersPanelPendingPhoto: undefined,
     playersPanelPendingTrackIds: undefined,
     winner: null,
     winnerLabel: null,
     winnerTeamMembers: null,
     winnerSong: null,
-    undoSnapshot: null
+    undoSnapshot: null,
+    historyExpanded: false
   };
 
   function setMode(m){
@@ -1375,6 +1433,7 @@
   }
 
   function backToChooseGame(){
+    stopAudio('win-song-embed');
     state.stage = 'chooseGame';
     state.winner = null;
     state.winnerLabel = null;
@@ -1626,6 +1685,7 @@
   }
 
   function resetGame(){
+    stopAudio('win-song-embed');
     state.stage = 'setup';
     state.players = [];
     state.teams = [];
@@ -2122,10 +2182,12 @@
     var coverHtml = track.cover
       ? '<img class="snippet-cover" src="' + track.cover + '" alt="" />'
       : '<div class="snippet-cover"></div>';
+    var safeTitle = (track.title || '').replace(/</g, '&lt;');
     zone.innerHTML =
       '<div class="snippet-box glow">' +
         coverHtml +
-        '<div id="snippet-embed" style="margin-top:8px;"></div>' +
+        '<p class="snippet-title">' + safeTitle + '</p>' +
+        '<div id="snippet-embed"></div>' +
       '</div>';
     playLibraryTrack('snippet-embed', track, 15000, false);
     clearTimeout(window.__snippetClearTimer);
@@ -2168,10 +2230,11 @@
     else subLabel = 'Closed out the board';
     var songHtml = '';
     if (song) {
-      var winCoverHtml = song.cover ? '<img class="lib-track-cover" src="' + song.cover + '" alt="" style="margin:0 auto 6px; display:block;" />' : '';
+      var winCoverHtml = song.cover ? '<img class="lib-track-cover" src="' + song.cover + '" alt="" style="margin:16px auto 6px; display:block;" />' : '';
+      var safeSongTitle = (song.title || '').replace(/</g, '&lt;');
       songHtml =
         winCoverHtml +
-        '<p class="label" style="text-align:center; margin-top:16px;">' + song.playerName + '&rsquo;s song</p>' +
+        '<p class="label" style="text-align:center; margin-top:8px;">' + safeSongTitle + '</p>' +
         '<div id="win-song-embed"></div>';
     }
     app.innerHTML =
@@ -2179,7 +2242,7 @@
         '<canvas id="fireworks-canvas" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>' +
         '<div style="position:relative; z-index:1;">' +
           '<div class="trophy">🏆</div>' +
-          '<p class="winner-name">' + label + ' wins</p>' +
+          '<p class="winner-name">' + label + ' WINS!</p>' +
           '<p class="winner-sub">' + subLabel + '</p>' +
           songHtml +
           '<div style="display:flex; gap:8px; margin-top:20px;">' +
@@ -2214,11 +2277,12 @@
 
   function renderHistoryTab(containerId){
     var app = document.getElementById(containerId || 'app');
-    var hist = loadHistory().slice().reverse();
-    if (hist.length === 0) {
+    var fullHist = loadHistory().slice().reverse();
+    if (fullHist.length === 0) {
       app.innerHTML = '<div class="empty-state">No games played yet. Finish a game to see it here.</div>';
       return;
     }
+    var hist = state.historyExpanded ? fullHist : fullHist.slice(0, 5);
     var items = hist.map(function(g){
       var participantsLabel;
       if (g.mode === 'ffa') {
@@ -2240,7 +2304,15 @@
         '<div class="hi-participants">' + participantsLabel + '</div>' +
       '</div>';
     }).join('');
-    app.innerHTML = items + '<button class="btn-danger clear-btn" id="clear-history-btn">Clear history</button>';
+    var viewMoreHtml = (!state.historyExpanded && fullHist.length > 5)
+      ? '<button type="button" id="history-view-more-btn" style="width:100%; margin-bottom:14px;">View More (' + (fullHist.length - 5) + ' more)</button>'
+      : '';
+    app.innerHTML = items + viewMoreHtml + '<button class="btn-danger clear-btn" id="clear-history-btn">Clear history</button>';
+    var viewMoreBtn = document.getElementById('history-view-more-btn');
+    if (viewMoreBtn) viewMoreBtn.addEventListener('click', function(){
+      state.historyExpanded = true;
+      render();
+    });
     document.querySelectorAll('.delete-game-btn').forEach(function(b){
       b.addEventListener('click', function(){
         if (window.confirm('Delete this game from history? This cannot be undone.')) {
