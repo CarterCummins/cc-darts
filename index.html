@@ -143,6 +143,14 @@
   .photo-row-actions button { font-size: 12px; padding: 7px 12px; }
   .turn-row .avatar-preview, .turn-row .avatar-placeholder { width: 32px; height: 32px; font-size: 14px; flex-shrink: 0; }
   .player-row-avatar { width: 36px; height: 36px; font-size: 15px; flex-shrink: 0; }
+  .stat-card { margin-bottom: 8px; }
+  .stat-row { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; padding: 10px 12px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+  .stat-rank { font-size: 12px; color: var(--text-muted); min-width: 24px; display: flex; align-items: center; }
+  .stats-avatar { width: 32px; height: 32px; font-size: 13px; flex-shrink: 0; }
+  .stat-name { flex: 1; font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .stat-quick { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+  .stat-chevron { font-size: 12px; color: var(--text-muted); }
+  .stat-detail { background: var(--card-active); border-radius: var(--radius); padding: 12px; margin-top: 4px; }
   .app-footer { text-align: center; margin-top: 32px; font-size: 12px; color: var(--text-muted); }
   .app-footer button { background: none; border: none; padding: 0; font-size: 12px; color: var(--text-muted); text-decoration: underline; cursor: pointer; }
   .changelog-panel { text-align: left; margin-top: 12px; background: var(--card); border-radius: var(--radius); padding: 12px 14px; }
@@ -256,10 +264,6 @@
     0%, 100% { opacity: 0.25; }
     50% { opacity: 0.95; }
   }
-  @keyframes glowFadeBoxSubtle {
-    0%, 100% { opacity: 0.2; }
-    50% { opacity: 0.7; }
-  }
   .snippet-box.glow { position: relative; text-align: center; }
   .snippet-box.glow::after {
     content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
@@ -283,10 +287,10 @@
     animation: glowFadeBox 3.2s ease-in-out infinite;
     will-change: opacity;
   }
-  .player-card, .metric-card, .history-item, .game-card, .edit-panel, .team-block {
+  .player-card, .metric-card, .history-item, .game-card, .edit-panel, .team-block, .stat-card {
     position: relative;
   }
-  .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .edit-panel::after, .team-block::after {
+  .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .edit-panel::after, .team-block::after, .stat-card::after {
     content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
     box-shadow: 0 0 16px 3px var(--box-glow-color);
     animation: glowFadeBox 3.2s ease-in-out infinite;
@@ -295,16 +299,19 @@
   .changelog-panel { position: relative; }
   .changelog-panel::after {
     content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
-    box-shadow: 0 0 8px 1px var(--box-glow-color);
-    animation: glowFadeBoxSubtle 3.2s ease-in-out infinite;
+    box-shadow: 0 0 16px 3px var(--box-glow-color);
+    animation: glowFadeBox 3.2s ease-in-out infinite;
     will-change: opacity;
   }
-  .player-card button::after, .metric-card button::after, .history-item button::after, .edit-panel button::after, .team-block button::after, .changelog-panel button::after,
+  #changelog-toggle::after {
+    content: none;
+  }
+  .player-card button::after, .metric-card button::after, .history-item button::after, .edit-panel button::after, .team-block button::after, .changelog-panel button::after, .stat-card .stat-row::after,
   .dart-keypad button::after, .atc-board button::after, .cricket-target-grid button::after {
     content: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    button::after, #app::after, .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .edit-panel::after, .team-block::after, .changelog-panel::after, .snippet-box.glow::after {
+    button::after, #app::after, .player-card::after, .metric-card::after, .history-item::after, .game-card::after, .edit-panel::after, .team-block::after, .changelog-panel::after, .snippet-box.glow::after, .stat-card::after {
       animation: none !important;
       opacity: 0.4 !important;
     }
@@ -362,6 +369,8 @@
 
   var SOUND_KEY = 'darts_sound_v1';
   var SOUND_VOLUME_KEY = 'darts_sound_volume_v1';
+  var MUSIC_ENABLED_KEY = 'darts_music_enabled_v1';
+  var MUSIC_VOLUME_KEY = 'darts_music_volume_v1';
   var NEW_PLAYER_SENTINEL = '\u0000__new_player__\u0000';
   var SOUND_OPTIONS = ['none', 'ping', 'doing', 'splat', 'mush', 'acid', 'wub', 'ring'];
   var audioCtx = null;
@@ -393,6 +402,31 @@
       masterGainNode.connect(ctx.destination);
     }
     return masterGainNode;
+  }
+  function loadMusicEnabled(){
+    try {
+      var v = localStorage.getItem(MUSIC_ENABLED_KEY);
+      return v === null ? true : v === 'true';
+    } catch(e){ return true; }
+  }
+  function saveMusicEnabled(v){
+    try { localStorage.setItem(MUSIC_ENABLED_KEY, v ? 'true' : 'false'); } catch(e){}
+  }
+  function loadMusicVolume(){
+    try {
+      var v = parseFloat(localStorage.getItem(MUSIC_VOLUME_KEY));
+      return isNaN(v) ? 0.8 : Math.min(1, Math.max(0, v));
+    } catch(e){ return 0.8; }
+  }
+  function saveMusicVolume(v){
+    try { localStorage.setItem(MUSIC_VOLUME_KEY, String(v)); } catch(e){}
+  }
+  function setMusicVolume(v){
+    saveMusicVolume(v);
+    Object.keys(window.__ckdAudio || {}).forEach(function(k){
+      var a = window.__ckdAudio[k];
+      if (a) a.volume = v;
+    });
   }
 
   function getAudioCtx(){
@@ -566,8 +600,10 @@
     });
   }
 
-  var APP_VERSION = '4.4.0';
+  var APP_VERSION = '4.5.0';
   var CHANGELOG = [
+    { v: '4.5.0', notes: 'Added a Music section in Settings: a toggle to turn win songs and 50+ snippets on or off entirely (on by default), plus their own Music Volume slider separate from click sounds. Renamed the old "Volume" slider to "Sound FX Volume" for clarity. Stats page: individual leaderboard rows now show each player\u2019s profile photo next to their rank, and tapping a row expands it into a detail panel with their full stat breakdown (games, wins, busts, highest throw, avg pts/dart) plus their 5 most recent games and results.' },
+    { v: '4.4.1', notes: 'Changelog card at the bottom now glows the same way every other card in the app does, instead of the extra-subtle glow it had before. Removed the glow from the "Changelog" toggle text itself so it\u2019s just the card glowing, not the button.' },
     { v: '4.4.0', notes: 'Win screen now shows the winner\u2019s profile photo above the trophy \u2014 only if they actually have one set, no blank placeholder circles. Settings moved out of the floating popout and into its own full page, matching Music/History/Stats/Players (same gear icon, tap it to switch there). Fixed a "429 Too Many Requests" error from GitHub that could hit the live app link under concurrent traffic: the delivery Worker was still pointed at the old ck-darts repo name (bouncing through a redirect on every load) and only cached for 30 seconds, so several people opening the link around the same time could exhaust GitHub\u2019s rate limit. Repointed it straight at the current repo and bumped the cache to an hour.' },
     { v: '4.3.0', notes: 'Button/box glow now animates opacity on a static shadow layer instead of animating the shadow itself \u2014 much smoother, no more fragmented/laggy pulsing. Rebalanced glow placement: the outer app card gets the glow trim; the dart pad, Around the Clock board, and Cricket grid don\u2019t glow at all since that just added clutter on dense button grids. Added a Volume slider under Click sounds in Settings so you can turn sound effects up or down without muting them. Fixed a bug where typing a player\u2019s name and then adding their first song (either when creating a new player or editing one) would wipe out the name you\u2019d just typed. Countdown games (200/501/301/170) now show how much you need left to win after every single dart, not just at the end of your turn \u2014 on a bust it correctly reflects back to what you started the turn with, since your score doesn\u2019t actually change until the turn settles.' },
     { v: '4.2.1', notes: 'Rebalanced the glow placement based on feedback: the outer app card now gets the glow trim around its edge. The dart pad, Around the Clock board, and Cricket number grid no longer glow at all \u2014 those are dense button grids where the glow just added clutter. Snippet/win-song boxes keep their glow as before.' },
@@ -675,10 +711,16 @@
       '<label>Button glow color<input type="color" id="theme-button-glow" /></label>' +
       '<label>Box glow color<input type="color" id="theme-box-glow" /></label>' +
       '<button type="button" id="theme-reset" style="width:100%; margin-top:6px;">Reset appearance</button>' +
-      '<p class="settings-section-heading">Sound</p>' +
+      '<p class="settings-section-heading">Sound FX</p>' +
       '<p class="label" style="margin-top:0;">Click sounds</p>' +
       '<div class="sound-row" id="sound-row"></div>' +
-      '<label style="margin-top:10px;">Volume<input type="range" id="sound-volume-slider" min="0" max="100" style="width:100%; margin-top:4px;" /></label>' +
+      '<label style="margin-top:10px;">Sound FX Volume<input type="range" id="sound-volume-slider" min="0" max="100" style="width:100%; margin-top:4px;" /></label>' +
+      '<p class="settings-section-heading">Music</p>' +
+      '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">' +
+        '<span class="label" style="margin:0;">Play win songs &amp; 50+ snippets</span>' +
+        '<button type="button" id="music-enabled-toggle" class="sound-btn"></button>' +
+      '</div>' +
+      '<label>Music Volume<input type="range" id="music-volume-slider" min="0" max="100" style="width:100%; margin-top:4px;" /></label>' +
       '<p class="settings-section-heading">Backup &amp; restore</p>' +
       '<p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Export before downloading a new version of this file, then import it back &mdash; browsers don\'t share saved data between file downloads.</p>' +
       '<div style="display:flex; gap:8px;">' +
@@ -741,6 +783,25 @@
     volumeSlider.value = Math.round(loadSoundVolume() * 100);
     volumeSlider.addEventListener('input', function(){
       setClickVolume(parseInt(volumeSlider.value, 10) / 100);
+    });
+
+    var musicToggle = document.getElementById('music-enabled-toggle');
+    var musicEnabled = loadMusicEnabled();
+    function renderMusicToggle(){
+      musicToggle.textContent = musicEnabled ? 'On' : 'Off';
+      musicToggle.className = 'sound-btn' + (musicEnabled ? ' active' : '');
+    }
+    renderMusicToggle();
+    musicToggle.addEventListener('click', function(){
+      musicEnabled = !musicEnabled;
+      saveMusicEnabled(musicEnabled);
+      renderMusicToggle();
+    });
+
+    var musicVolumeSlider = document.getElementById('music-volume-slider');
+    musicVolumeSlider.value = Math.round(loadMusicVolume() * 100);
+    musicVolumeSlider.addEventListener('input', function(){
+      setMusicVolume(parseInt(musicVolumeSlider.value, 10) / 100);
     });
 
     function updateTheme(){
@@ -1425,7 +1486,7 @@
     if (!target || !track) return;
     stopAudio(containerId);
     var audio = new Audio(track.url);
-    audio.volume = 1;
+    audio.volume = loadMusicVolume();
     window.__ckdAudio[containerId] = audio;
     if (showLabel !== false) {
       target.innerHTML = '<p class="label" style="margin:0;">' + track.title + '</p>';
@@ -2392,6 +2453,7 @@
   }
 
   function maybePlaySnippet(name, turnSum){
+    if (!loadMusicEnabled()) return;
     if (['200', '501', '301'].indexOf(state.game) === -1) return;
     if (turnSum <= 70) return;
     var profile = getProfile(name);
@@ -2402,6 +2464,7 @@
   }
 
   function pickWinnerSong(candidates){
+    if (!loadMusicEnabled()) return null;
     var withAudio = candidates.filter(function(n){
       return profileHasAudio(getProfile(n));
     });
@@ -2659,6 +2722,51 @@
     });
   }
 
+  function recentGamesForPlayer(name, limit){
+    var lowerName = name.toLowerCase();
+    var hist = loadHistory().slice().reverse().filter(function(g){
+      if (g.mode === 'ffa') return g.participants.some(function(n){ return n.toLowerCase() === lowerName; });
+      return g.participants.some(function(team){ return team.some(function(n){ return n.toLowerCase() === lowerName; }); });
+    });
+    return hist.slice(0, limit || 5);
+  }
+
+  function playerStatDetailHtml(p){
+    var recent = recentGamesForPlayer(p.name, 5);
+    var metricsHtml =
+      '<div class="metric-grid" style="margin-top:0;">' +
+        '<div class="metric-card"><p class="m-label">Games</p><p class="m-value">' + p.games + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Wins</p><p class="m-value">' + p.wins + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Busts</p><p class="m-value">' + p.busts + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Avg busts</p><p class="m-value">' + p.avgBustsPerGame.toFixed(1) + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Highest throw</p><p class="m-value">' + p.highestThrow + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Avg highest</p><p class="m-value">' + p.avgHighestPerGame.toFixed(1) + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Avg pts/dart</p><p class="m-value">' + p.avgPointsPerDart.toFixed(1) + '</p></div>' +
+      '</div>';
+    var gamesHtml;
+    if (recent.length) {
+      gamesHtml = recent.map(function(g){
+        var lowerName = p.name.toLowerCase();
+        var isWin = g.mode === 'ffa'
+          ? (g.winner && g.winner.toLowerCase() === lowerName)
+          : (g.winnerMembers || []).some(function(n){ return n.toLowerCase() === lowerName; });
+        var gameLabel = g.gameLabel || (g.startScore ? ('Countdown from ' + g.startScore) : 'Game');
+        var resultHtml = isWin
+          ? '<b style="color:var(--success);">Won</b>'
+          : '<span style="color:var(--danger);">Lost</span>';
+        return '<div class="history-item" style="margin-bottom:8px;">' +
+          '<div class="hi-top"><span class="hi-date">' + formatDate(g.date) + '</span><span class="hi-mode">' + gameLabel + '</span></div>' +
+          '<div class="hi-winner">' + resultHtml + '</div>' +
+        '</div>';
+      }).join('');
+    } else {
+      gamesHtml = '<p style="font-size:12px; color:var(--text-muted); margin:8px 0 0;">No recent games found.</p>';
+    }
+    return metricsHtml +
+      '<p class="section-heading" style="font-size:13px; margin:16px 0 8px;">Recent games</p>' +
+      gamesHtml;
+  }
+
   function renderStatsTab(containerId){
     var app = document.getElementById(containerId || 'app');
     var hist = loadHistory();
@@ -2696,16 +2804,27 @@
       return '';
     }
 
-    var indivRows = indiv.map(function(p, i){
+    var indivCardsHtml = indiv.map(function(p, i){
       var winPct = p.games ? Math.round((p.wins / p.games) * 100) : 0;
-      return '<tr><td>' + (i + 1) + '</td><td>' + rankMedal(i) + p.name + '</td><td>' + p.games + '</td><td>' + p.wins + '</td><td>' + winPct + '%</td><td>' + p.busts + '</td><td>' + p.avgBustsPerGame.toFixed(1) + '</td><td>' + p.highestThrow + '</td><td>' + p.avgHighestPerGame.toFixed(1) + '</td><td>' + p.avgPointsPerDart.toFixed(1) + '</td></tr>';
+      var photo = getProfile(p.name).photo;
+      return '<div class="stat-card">' +
+        '<button type="button" class="stat-row" data-idx="' + i + '">' +
+          '<span class="stat-rank">' + rankMedal(i) + (i + 1) + '</span>' +
+          avatarHtml(photo, p.name, 'stats-avatar') +
+          '<span class="stat-name">' + p.name + '</span>' +
+          '<span class="stat-quick">' + p.wins + 'W &middot; ' + winPct + '%</span>' +
+          '<span class="stat-chevron" id="stat-chev-' + i + '">&#9662;</span>' +
+        '</button>' +
+        '<div class="stat-detail" id="stat-detail-' + i + '" style="display:none;">' +
+          playerStatDetailHtml(p) +
+        '</div>' +
+      '</div>';
     }).join('');
 
     var html =
       overviewHtml +
       '<p class="section-heading">Individual leaderboard</p>' +
-      '<div class="table-scroll"><table class="stats-table"><thead><tr><th>#</th><th>Player</th><th>Games</th><th>Wins</th><th>Win %</th><th>Busts</th><th>Avg busts</th><th>Highest</th><th>Avg highest</th><th>Avg pts/dart</th></tr></thead>' +
-      '<tbody>' + indivRows + '</tbody></table></div>';
+      indivCardsHtml;
 
     if (teams.length > 0) {
       var teamRows = teams.map(function(t, i){
@@ -2719,6 +2838,17 @@
     }
 
     app.innerHTML = html;
+
+    document.querySelectorAll('.stat-row').forEach(function(b){
+      b.addEventListener('click', function(){
+        var idx = b.dataset.idx;
+        var detail = document.getElementById('stat-detail-' + idx);
+        var chev = document.getElementById('stat-chev-' + idx);
+        var isOpen = detail.style.display !== 'none';
+        detail.style.display = isOpen ? 'none' : 'block';
+        chev.innerHTML = isOpen ? '&#9662;' : '&#9652;';
+      });
+    });
   }
 
   function render(){
