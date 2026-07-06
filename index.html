@@ -14,6 +14,8 @@
     --card-active: #23283a;
     --border: #2c2f3a;
     --border-accent: #5b8cff;
+    --button-glow-color: #5b8cff;
+    --box-glow-color: #5b8cff;
     --text: #eef0f5;
     --text-secondary: #9aa0b0;
     --text-muted: #6b7180;
@@ -179,9 +181,11 @@
   .menu-fab { position: fixed; top: 14px; left: 60px; z-index: 50; display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 22px; font-size: 14px; font-weight: 500; }
   .top-right-controls { position: fixed; top: 14px; right: 14px; z-index: 50; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; max-width: calc(100vw - 28px); }
   .players-fab { display: flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 22px; font-size: 14px; font-weight: 500; }
-  .settings-panel { position: fixed; top: 60px; left: 14px; z-index: 50; width: 220px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+  .settings-panel { position: fixed; top: 60px; left: 14px; z-index: 50; width: 300px; max-height: 82vh; overflow-y: auto; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
   .settings-panel label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
   .settings-panel input[type="color"] { width: 100%; height: 36px; padding: 2px; margin-top: 4px; cursor: pointer; }
+  .settings-section-heading { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
+  .settings-section-heading:first-child { margin-top: 0; padding-top: 0; border-top: none; }
   .player-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
   .player-row:last-child { border-bottom: none; }
   .player-row-info { flex: 1; min-width: 0; }
@@ -206,41 +210,75 @@
   .lib-search-artist { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .lib-track-cover { width: 120px; height: 120px; border-radius: 14px; object-fit: cover; flex-shrink: 0; background: var(--card-active); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
   .lib-row-cover { width: 24px; height: 24px; border-radius: 5px; object-fit: cover; flex-shrink: 0; background: var(--card-active); }
-  @media (max-width: 480px) {
+  @media (max-width: 760px) {
     .menu-fab, .players-fab { padding: 9px 10px; gap: 0; }
     .menu-fab .btn-label, .players-fab .btn-label { display: none; }
     .menu-fab { left: 56px; }
     .top-right-controls { gap: 6px; }
   }
+  @media (max-width: 480px) {
+    .dart-keypad { grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 6px; }
+    .dart-cell { padding: 4px; }
+    .dart-num-btn { font-size: 13px; padding: 6px 2px; }
+    .dart-mult-btn { font-size: 11px; padding: 5px 2px; }
+    .dart-cell-mults { gap: 3px; margin-top: 3px; }
+  }
   .players-fab.tab-active { border: 2px solid var(--border-accent); color: var(--border-accent); }
-  .dart-keypad { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; }
-  .dart-cell { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; text-align: center; }
-  .dart-cell-num { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
-  .dart-cell-mults { display: flex; gap: 4px; justify-content: center; }
+  .dart-keypad { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 12px; padding: 10px; border-radius: var(--radius); }
+  .dart-cell { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; text-align: center; }
+  .dart-cell-mults { display: flex; gap: 4px; justify-content: center; margin-top: 4px; }
   .dart-mult-btn { flex: 1; padding: 8px 4px; font-size: 13px; font-weight: 600; }
+  .dart-num-btn { width: 100%; font-size: 16px; font-weight: 700; padding: 8px 4px; }
   .dart-mult-btn.miss-btn { background: var(--card-active); color: var(--danger); border-color: var(--danger); }
+  .bull-cell .dart-cell-mults { flex-direction: column; }
+  .dart-mult-btn .color-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+  .green-dot { background: var(--success); }
+  .red-dot { background: var(--danger); }
   .turn-darts-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; min-height: 30px; }
   .turn-dart-chip { background: var(--card-active); border-radius: 16px; padding: 5px 12px; font-size: 13px; font-weight: 500; }
   .turn-dart-chip.empty-slot { background: transparent; border: 1px dashed var(--border); color: var(--text-muted); }
   .undo-btn { width: 100%; margin-top: 10px; }
   .undo-btn:disabled { opacity: 0.35; cursor: default; }
-  @keyframes slowGlow {
-    0%, 100% { box-shadow: 0 0 6px 0 var(--border-accent); }
-    50% { box-shadow: 0 0 20px 5px var(--border-accent); }
+  .atc-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); gap: 6px; margin-bottom: 12px; padding: 10px; border-radius: var(--radius); }
+  .atc-num-btn { padding: 12px 4px; font-weight: 600; }
+  .atc-num-btn.atc-target { border: 2px solid var(--border-accent); color: var(--border-accent); }
+  .atc-num-btn.atc-done { opacity: 0.35; }
+  .atc-bull { grid-column: span 2; }
+  .cricket-target-grid { padding: 10px; border-radius: var(--radius); }
+  .drag-over { outline: 2px dashed var(--border-accent); outline-offset: 2px; }
+  @keyframes slowGlowButton {
+    0%, 100% { box-shadow: 0 0 1px 0 var(--button-glow-color); }
+    50% { box-shadow: 0 0 4px 1px var(--button-glow-color); }
   }
-  .snippet-box.glow { animation: slowGlow 3.2s ease-in-out infinite; text-align: center; }
+  @keyframes slowGlowBox {
+    0%, 100% { box-shadow: 0 0 8px 1px var(--box-glow-color); }
+    50% { box-shadow: 0 0 26px 6px var(--box-glow-color); }
+  }
+  @keyframes slowGlowBoxSubtle {
+    0%, 100% { box-shadow: 0 0 4px 0 var(--box-glow-color); }
+    50% { box-shadow: 0 0 12px 2px var(--box-glow-color); }
+  }
+  .snippet-box.glow { animation: slowGlowBox 3.2s ease-in-out infinite; text-align: center; }
   .snippet-cover { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; display: block; margin: 0 auto; background: var(--card-active); }
   .snippet-title { font-size: 13px; font-weight: 500; margin: 8px 0 0; text-align: center; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  button, .player-card, .metric-card, .history-item, .game-card, .dart-cell, .chip, .theme-swatch, .edit-panel, .team-block {
-    animation: slowGlow 3.2s ease-in-out infinite;
+  button { animation: slowGlowButton 3.2s ease-in-out infinite; }
+  .player-card, .metric-card, .history-item, .game-card, .edit-panel, .team-block, .dart-keypad, .atc-board, .cricket-target-grid, .settings-panel {
+    animation: slowGlowBox 3.2s ease-in-out infinite;
+  }
+  .changelog-panel {
+    animation: slowGlowBoxSubtle 3.2s ease-in-out infinite;
+  }
+  .player-card button, .metric-card button, .history-item button, .game-card, .edit-panel button, .team-block button, .dart-keypad button, .atc-board button, .cricket-target-grid button, .settings-panel button, .changelog-panel button {
+    animation: none;
   }
   @media (prefers-reduced-motion: reduce) {
-    button, .player-card, .metric-card, .history-item, .game-card, .dart-cell, .chip, .theme-swatch, .edit-panel, .team-block, .snippet-box.glow {
+    button, .player-card, .metric-card, .history-item, .game-card, .dart-keypad, .atc-board, .cricket-target-grid, .settings-panel, .edit-panel, .team-block, .changelog-panel, .snippet-box.glow {
       animation: none !important;
     }
   }
 </style>
 </head>
+
 <body>
 <div id="trippy-bg" class="trippy-fullscreen" style="display:block;">
   <div class="blob b1"></div>
@@ -258,6 +296,7 @@
 </div>
 <button type="button" id="global-menu-btn" class="menu-fab" aria-label="Main menu">&#8962; <span class="btn-label">Main menu</span></button>
 <div id="settings-panel" class="settings-panel" style="display:none;">
+  <p class="settings-section-heading">Appearance</p>
   <p class="label" style="margin-top:0;">Presets</p>
   <div class="theme-swatch-grid" id="theme-swatch-grid"></div>
   <p class="label">Custom</p>
@@ -270,13 +309,20 @@
   <label>Accent color
     <input type="color" id="theme-accent" />
   </label>
+  <label>Button glow color
+    <input type="color" id="theme-button-glow" />
+  </label>
+  <label>Box glow color
+    <input type="color" id="theme-box-glow" />
+  </label>
   <div style="display:flex; gap:8px; margin-top:10px;">
     <button type="button" id="theme-reset" style="flex:1;">Reset</button>
     <button type="button" id="theme-close" class="btn-primary" style="flex:1;">Done</button>
   </div>
-  <p class="label" style="margin-top:16px;">Click sounds</p>
+  <p class="settings-section-heading">Sound</p>
+  <p class="label" style="margin-top:0;">Click sounds</p>
   <div class="sound-row" id="sound-row"></div>
-  <p class="label" style="margin-top:16px;">Backup &amp; restore</p>
+  <p class="settings-section-heading">Backup &amp; restore</p>
   <p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Export before downloading a new version of this file, then import it back &mdash; browsers don't share saved data between file downloads.</p>
   <div style="display:flex; gap:8px;">
     <button type="button" id="export-data-btn" style="flex:1;">Export</button>
@@ -284,6 +330,7 @@
   </div>
   <input type="file" id="import-file-input" accept="application/json" style="display:none;" />
 </div>
+
 <div id="app-wrap">
   <h1>CC Darts</h1>
   <p class="subtitle">Free-for-all or 2v2 teams, with saved players and stats</p>
@@ -303,7 +350,7 @@
   var PROFILES_KEY = 'darts_profiles_v1';
   var LIBRARY_KEY = 'darts_library_v1';
   var THEME_KEY = 'darts_theme_v1';
-  var DEFAULT_THEME = { bg: '#14151a', card: '#1e2028', accent: '#5b8cff' };
+  var DEFAULT_THEME = { bg: '#14151a', card: '#1e2028', accent: '#5b8cff', buttonGlow: '#5b8cff', boxGlow: '#5b8cff' };
   var PRESET_THEMES = [
     { name: 'Midnight', bg: '#14151a', card: '#1e2028', accent: '#5b8cff' },
     { name: 'Forest', bg: '#0f1a14', card: '#16261d', accent: '#4fce8a' },
@@ -498,8 +545,9 @@
     });
   }
 
-  var APP_VERSION = '4.1.0';
+  var APP_VERSION = '4.2.0';
   var CHANGELOG = [
+    { v: '4.2.0', notes: 'Big polish pass: button glow is now very subtle, while boxes/cards get a stronger, separately-customizable glow (new Button glow color and Box glow color pickers in Settings). Changelog now has its own subtle-glow box and loads 5 entries at a time. Fixed the win screen showing the song info twice, and fixed the win song overlapping with a still-playing 50+ snippet from the same game \u2014 winning now always cuts the snippet immediately. 50+ snippets now also play for 501 and 301, not just 200. The dart pad: tap the number itself for a single, x2/x3 stay separate, and the bullseye is labeled Bullseye with Green (25) / Red (50) color dots. Around the Clock is now a clickable dartboard-style number grid instead of a hit-count entry, with Miss and Undo. Cricket got a Miss button. Removed the manual "add song by URL" option from the Music tab since search covers it. Settings got reorganized into clear sections and is wider; the top-bar collapse to icon-only now kicks in earlier so it doesn\u2019t overlap on resized desktop windows, not just phones. Player photo upload now supports drag-and-drop. Mobile screens show the dart pad in a denser 4-column layout so more of it fits without scrolling (desktop layout unchanged).' },
     { v: '4.1.0', notes: 'Creating a player in the Players tab now lets you add a photo and songs right away instead of adding the name first and editing after. The slow glow effect from the 50+ snippet box now runs across buttons and cards throughout the app. Win screen is more exciting ("Matt WINS!") and just shows the song info + art without the possessive label. The 50+ snippet box now shows the song title, centered under the art. The win song stops playing as soon as you leave the win screen for another tab or game. History only loads the last 5 games with a "View More" button for the rest. Added two new click sounds in Settings: Wub (a synthesized dubstep-style bass wobble) and Ring (a synthesized pulsing alarm-style tone).' },
     { v: '4.0.0', notes: 'Big update: (1) Countdown scoring is now a tap-to-score dart keypad \u2014 pick a number and a \u00d71/\u00d72/\u00d73 multiplier (plus Bull and Miss) instead of typing a total; the app does the math. Added a universal Undo button (countdown, Around the Clock, and Cricket) to fix a misclick. (2) The 50+ snippet now triggers off your full 3-dart turn total (over 70 combined) instead of any single throw, since a fast turn could otherwise trigger it repeatedly \u2014 snippet length bumped to 15 seconds. (3) Music/History/Stats/Players are now full pages instead of small popouts, so there\u2019s room for more detail and they actually fit the screen. (4) You can add a new player directly from the Players tab. (5) The 50+ snippet box no longer shows a name \u2014 just album art with a slow glowing highlight. Win-screen album art is much bigger. Songs no longer repeat back-to-back for the same player, and the cap per player is now 5 songs instead of 3. (6) Removed the scattered "clear player stats" buttons from History and Stats \u2014 Delete Player now only lives in the Players tab. (7) Stats now show average points per dart, both per-player and overall.' },
     { v: '3.3.1', notes: 'Renamed the app from CM Darts to CC Darts (title, header, and backup filename).' },
@@ -558,9 +606,15 @@
   function loadTheme(){
     try {
       var saved = JSON.parse(localStorage.getItem(THEME_KEY)) || {};
-      return { bg: saved.bg || DEFAULT_THEME.bg, card: saved.card || DEFAULT_THEME.card, accent: saved.accent || DEFAULT_THEME.accent };
+      return {
+        bg: saved.bg || DEFAULT_THEME.bg,
+        card: saved.card || DEFAULT_THEME.card,
+        accent: saved.accent || DEFAULT_THEME.accent,
+        buttonGlow: saved.buttonGlow || DEFAULT_THEME.buttonGlow,
+        boxGlow: saved.boxGlow || DEFAULT_THEME.boxGlow
+      };
     } catch(e){
-      return { bg: DEFAULT_THEME.bg, card: DEFAULT_THEME.card, accent: DEFAULT_THEME.accent };
+      return { bg: DEFAULT_THEME.bg, card: DEFAULT_THEME.card, accent: DEFAULT_THEME.accent, buttonGlow: DEFAULT_THEME.buttonGlow, boxGlow: DEFAULT_THEME.boxGlow };
     }
   }
   function saveTheme(t){
@@ -570,6 +624,8 @@
     document.documentElement.style.setProperty('--bg', t.bg);
     document.documentElement.style.setProperty('--card', t.card);
     document.documentElement.style.setProperty('--border-accent', t.accent);
+    document.documentElement.style.setProperty('--button-glow-color', t.buttonGlow || t.accent);
+    document.documentElement.style.setProperty('--box-glow-color', t.boxGlow || t.accent);
   }
   function initSettingsPanel(){
     var theme = loadTheme();
@@ -579,9 +635,13 @@
     var bgInput = document.getElementById('theme-bg');
     var cardInput = document.getElementById('theme-card');
     var accentInput = document.getElementById('theme-accent');
+    var buttonGlowInput = document.getElementById('theme-button-glow');
+    var boxGlowInput = document.getElementById('theme-box-glow');
     bgInput.value = theme.bg;
     cardInput.value = theme.card;
     accentInput.value = theme.accent;
+    buttonGlowInput.value = theme.buttonGlow;
+    boxGlowInput.value = theme.boxGlow;
 
     var swatchGrid = document.getElementById('theme-swatch-grid');
     swatchGrid.innerHTML = PRESET_THEMES.map(function(p, i){
@@ -593,10 +653,12 @@
     swatchGrid.querySelectorAll('.theme-swatch').forEach(function(b){
       b.addEventListener('click', function(){
         var preset = PRESET_THEMES[parseInt(b.dataset.i, 10)];
-        var t = { bg: preset.bg, card: preset.card, accent: preset.accent };
+        var t = { bg: preset.bg, card: preset.card, accent: preset.accent, buttonGlow: preset.accent, boxGlow: preset.accent };
         bgInput.value = t.bg;
         cardInput.value = t.card;
         accentInput.value = t.accent;
+        buttonGlowInput.value = t.buttonGlow;
+        boxGlowInput.value = t.boxGlow;
         applyTheme(t);
         saveTheme(t);
       });
@@ -627,17 +689,21 @@
       panel.style.display = 'none';
     });
     function updateTheme(){
-      var t = { bg: bgInput.value, card: cardInput.value, accent: accentInput.value };
+      var t = { bg: bgInput.value, card: cardInput.value, accent: accentInput.value, buttonGlow: buttonGlowInput.value, boxGlow: boxGlowInput.value };
       applyTheme(t);
       saveTheme(t);
     }
     bgInput.addEventListener('input', updateTheme);
     cardInput.addEventListener('input', updateTheme);
     accentInput.addEventListener('input', updateTheme);
+    buttonGlowInput.addEventListener('input', updateTheme);
+    boxGlowInput.addEventListener('input', updateTheme);
     document.getElementById('theme-reset').addEventListener('click', function(){
       bgInput.value = DEFAULT_THEME.bg;
       cardInput.value = DEFAULT_THEME.card;
       accentInput.value = DEFAULT_THEME.accent;
+      buttonGlowInput.value = DEFAULT_THEME.buttonGlow;
+      boxGlowInput.value = DEFAULT_THEME.boxGlow;
       applyTheme(DEFAULT_THEME);
       saveTheme(DEFAULT_THEME);
     });
@@ -682,11 +748,7 @@
       '<p class="label" style="margin-top:0;">Music library</p>' +
       '<p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Search to add songs here, then assign them to players from the Players tab.</p>' +
       '<input type="text" id="music-search-input" placeholder="Search for a song or artist..." />' +
-      '<div id="music-search-results" style="margin-bottom:12px;"></div>' +
-      '<p class="label" style="margin-top:4px;">Or add by URL</p>' +
-      '<input type="text" id="music-title-input" placeholder="Song title" style="margin-bottom:6px;" />' +
-      '<input type="text" id="music-url-input" placeholder="Audio file URL (mp3, wav, m4a...)" style="margin-bottom:6px;" />' +
-      '<button type="button" id="music-add-btn" class="btn-primary" style="width:100%; margin-bottom:16px;">Add song</button>' +
+      '<div id="music-search-results" style="margin-bottom:16px;"></div>' +
       '<p class="label">All songs (' + lib.length + ')</p>' +
       '<div id="music-full-list"></div>';
 
@@ -719,17 +781,6 @@
 
     wireLibrarySearchBox('music-search-input', 'music-search-results', function(){
       renderFullList();
-    });
-
-    document.getElementById('music-add-btn').addEventListener('click', function(){
-      var titleInput = document.getElementById('music-title-input');
-      var urlInput = document.getElementById('music-url-input');
-      var track = addLibraryTrack(titleInput.value, urlInput.value, null);
-      if (track) {
-        titleInput.value = '';
-        urlInput.value = '';
-        renderFullList();
-      }
     });
   }
 
@@ -888,20 +939,24 @@
       document.getElementById('pp-cancel-btn').addEventListener('click', resetPendingAndBack);
     }
     var ppPhotoInput = document.getElementById('pp-photo-file-input');
-    document.getElementById('pp-photo-upload-btn').addEventListener('click', function(){
-      ppPhotoInput.click();
-    });
-    ppPhotoInput.addEventListener('change', function(e){
-      var file = e.target.files[0];
-      if (!file) return;
+    function handlePpPhotoFile(file){
       resizeImageToDataUrl(file, 160, function(dataUrl){
         if (!dataUrl) return;
         state.playersPanelPendingPhoto = dataUrl;
         var nameNow = document.getElementById('pp-name-input').value || nameSafe;
         document.getElementById('pp-photo-preview-wrap').innerHTML = avatarHtml(dataUrl, nameNow);
       });
+    }
+    document.getElementById('pp-photo-upload-btn').addEventListener('click', function(){
+      ppPhotoInput.click();
+    });
+    ppPhotoInput.addEventListener('change', function(e){
+      var file = e.target.files[0];
+      if (!file) return;
+      handlePpPhotoFile(file);
       e.target.value = '';
     });
+    wireDragDropPhoto('pp-photo-preview-wrap', handlePpPhotoFile);
     document.getElementById('pp-photo-remove-btn').addEventListener('click', function(){
       state.playersPanelPendingPhoto = null;
       var nameNow = document.getElementById('pp-name-input').value || nameSafe;
@@ -1159,6 +1214,23 @@
     reader.onerror = function(){ callback(null); };
     reader.readAsDataURL(file);
   }
+  function wireDragDropPhoto(dropZoneId, onFile){
+    var zone = document.getElementById(dropZoneId);
+    if (!zone) return;
+    zone.addEventListener('dragover', function(e){
+      e.preventDefault();
+      zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', function(){
+      zone.classList.remove('drag-over');
+    });
+    zone.addEventListener('drop', function(e){
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (file && file.type.indexOf('image/') === 0) onFile(file);
+    });
+  }
   function loadLibrary(){
     try { return JSON.parse(localStorage.getItem(LIBRARY_KEY)) || []; }
     catch(e){ return []; }
@@ -1348,6 +1420,7 @@
     turnMember: [0, 0],
     turnDarts: [],
     cricketDartsThisTurn: 0,
+    atcHitsThisTurn: 0,
     firstIndex: 0,
     editingPlayer: null,
     pendingPhoto: undefined,
@@ -1470,6 +1543,7 @@
       state.turnMember = [0, 0];
     }
     state.cricketDartsThisTurn = 0;
+    state.atcHitsThisTurn = 0;
     state.turnDarts = [];
     state.undoSnapshot = null;
     state.winner = null;
@@ -1507,6 +1581,10 @@
   }
 
   function declareWin(entity){
+    stopAudio('snippet-embed');
+    clearTimeout(window.__snippetClearTimer);
+    var snippetZone = document.getElementById('snippet-zone');
+    if (snippetZone) snippetZone.innerHTML = '';
     var names = winnerNamesFor(entity);
     if (state.mode === 'ffa') {
       state.winner = entity.name;
@@ -1536,6 +1614,7 @@
       turnMember: state.turnMember,
       turnDarts: state.turnDarts,
       cricketDartsThisTurn: state.cricketDartsThisTurn,
+      atcHitsThisTurn: state.atcHitsThisTurn,
       stage: state.stage,
       winner: state.winner,
       winnerLabel: state.winnerLabel,
@@ -1553,6 +1632,7 @@
     state.turnMember = snap.turnMember;
     state.turnDarts = snap.turnDarts;
     state.cricketDartsThisTurn = snap.cricketDartsThisTurn;
+    state.atcHitsThisTurn = snap.atcHitsThisTurn;
     state.stage = snap.stage;
     state.winner = snap.winner;
     state.winnerLabel = snap.winnerLabel;
@@ -1576,19 +1656,36 @@
     return 'Finished';
   }
 
-  function submitAtcHits(hits){
+  function hitAtcNumber(numberClicked){
+    if (state.turnDarts.length >= 3) return;
     snapshotForUndo();
     var entities = activeEntities();
     var entity = entities[state.turnIndex];
-    var thrower = state.mode === 'ffa' ? entity.name : entity.members[state.turnMember[state.turnIndex]];
-    entity.target += hits;
-    entity.history.push({ hits: hits, target: entity.target, thrower: thrower });
+    var thrower = currentThrowerName();
+    state.turnDarts.push(numberClicked);
+    var isHit = numberClicked === entity.target;
+    if (isHit) {
+      entity.target += 1;
+      state.atcHitsThisTurn += 1;
+    }
     if (entity.target > 21) {
+      entity.history.push({ hits: state.atcHitsThisTurn, target: entity.target, thrower: thrower });
+      state.turnDarts = [];
+      state.atcHitsThisTurn = 0;
       declareWin(entity);
       return;
     }
-    advanceTurn();
+    if (state.turnDarts.length >= 3) {
+      entity.history.push({ hits: state.atcHitsThisTurn, target: entity.target, thrower: thrower });
+      state.turnDarts = [];
+      state.atcHitsThisTurn = 0;
+      advanceTurn();
+    }
     render();
+  }
+
+  function missAtc(){
+    hitAtcNumber(-1);
   }
 
   function activeCricketEntity(){
@@ -1640,6 +1737,20 @@
     snapshotForUndo();
     state.cricketDartsThisTurn = 0;
     advanceTurn();
+    render();
+  }
+
+  function missCricket(){
+    if (state.cricketDartsThisTurn >= 3) return;
+    snapshotForUndo();
+    var entity = activeCricketEntity();
+    var thrower = currentThrowerName();
+    entity.history.push({ key: null, scored: false, thrower: thrower, miss: true });
+    state.cricketDartsThisTurn += 1;
+    if (state.cricketDartsThisTurn >= 3) {
+      state.cricketDartsThisTurn = 0;
+      advanceTurn();
+    }
     render();
   }
 
@@ -1892,20 +2003,24 @@
         function(){ render(); }
       );
       var editPhotoInput = document.getElementById('edit-photo-file-input');
-      document.getElementById('edit-photo-upload-btn').addEventListener('click', function(){
-        editPhotoInput.click();
-      });
-      editPhotoInput.addEventListener('change', function(e){
-        var file = e.target.files[0];
-        if (!file) return;
+      function handleEditPhotoFile(file){
         resizeImageToDataUrl(file, 160, function(dataUrl){
           if (!dataUrl) return;
           state.pendingPhoto = dataUrl;
           var nameNow = document.getElementById('edit-name-input').value || state.editingPlayer;
           document.getElementById('edit-photo-preview-wrap').innerHTML = avatarHtml(dataUrl, nameNow);
         });
+      }
+      document.getElementById('edit-photo-upload-btn').addEventListener('click', function(){
+        editPhotoInput.click();
+      });
+      editPhotoInput.addEventListener('change', function(e){
+        var file = e.target.files[0];
+        if (!file) return;
+        handleEditPhotoFile(file);
         e.target.value = '';
       });
+      wireDragDropPhoto('edit-photo-preview-wrap', handleEditPhotoFile);
       document.getElementById('edit-photo-remove-btn').addEventListener('click', function(){
         state.pendingPhoto = null;
         var nameNow = document.getElementById('edit-name-input').value || state.editingPlayer;
@@ -1949,19 +2064,18 @@
     var nums = [20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1];
     var cells = nums.map(function(n){
       return '<div class="dart-cell">' +
-        '<div class="dart-cell-num">' + n + '</div>' +
+        '<button type="button" class="dart-mult-btn dart-num-btn" data-value="' + n + '">' + n + '</button>' +
         '<div class="dart-cell-mults">' +
-          '<button type="button" class="dart-mult-btn" data-value="' + n + '">&times;1</button>' +
           '<button type="button" class="dart-mult-btn" data-value="' + (n * 2) + '">&times;2</button>' +
           '<button type="button" class="dart-mult-btn" data-value="' + (n * 3) + '">&times;3</button>' +
         '</div>' +
       '</div>';
     }).join('');
-    cells += '<div class="dart-cell">' +
-      '<div class="dart-cell-num">Bull</div>' +
+    cells += '<div class="dart-cell bull-cell">' +
+      '<div class="dart-cell-num">Bullseye</div>' +
       '<div class="dart-cell-mults">' +
-        '<button type="button" class="dart-mult-btn" data-value="25">&times;1</button>' +
-        '<button type="button" class="dart-mult-btn" data-value="50">&times;2</button>' +
+        '<button type="button" class="dart-mult-btn" data-value="25"><span class="color-dot green-dot"></span>Green</button>' +
+        '<button type="button" class="dart-mult-btn" data-value="50"><span class="color-dot red-dot"></span>Red</button>' +
       '</div>' +
     '</div>';
     cells += '<div class="dart-cell">' +
@@ -2043,24 +2157,30 @@
     var histRows = entity.history.slice(-6).reverse().map(function(h){
       return '<tr><td>' + h.hits + ' hit' + (h.hits === 1 ? '' : 's') + '</td><td>' + atcTargetLabel(h.target) + '</td></tr>';
     }).join('');
-    var hitButtons = [0, 1, 2, 3].map(function(n){
-      return '<button type="button" class="atc-hit-btn btn-primary" data-hits="' + n + '" style="flex:1;">' + n + '</button>';
-    }).join('');
+
+    var boardCells = '';
+    for (var n = 1; n <= 20; n++) {
+      var cls = n < entity.target ? 'atc-done' : (n === entity.target ? 'atc-target' : '');
+      boardCells += '<button type="button" class="atc-num-btn ' + cls + '" data-num="' + n + '">' + n + '</button>';
+    }
+    var bullCls = entity.target === 21 ? 'atc-target' : (entity.target > 21 ? 'atc-done' : '');
+    boardCells += '<button type="button" class="atc-num-btn atc-bull ' + bullCls + '" data-num="21">Bull</button>';
 
     app.innerHTML =
       '<div class="card-grid">' + cards + '</div>' +
-      '<div class="turn-row">' + avatarHtml(getProfile(thrower).photo, thrower) + '<p>' + thrower + '&rsquo;s turn &middot; aiming for ' + atcTargetLabel(entity.target) + '</p></div>' +
-      '<p class="label">Hits this turn</p>' +
-      '<div style="display:flex; gap:8px; margin-bottom:12px;">' + hitButtons + '</div>' +
+      '<div class="turn-row">' + avatarHtml(getProfile(thrower).photo, thrower) + '<p>' + thrower + '&rsquo;s turn &middot; dart ' + (state.turnDarts.length + 1) + ' of 3 &middot; aiming for ' + atcTargetLabel(entity.target) + '</p></div>' +
+      '<div class="atc-board" id="atc-board">' + boardCells + '</div>' +
+      '<button type="button" class="dart-mult-btn miss-btn" id="atc-miss-btn" style="width:100%;">Miss</button>' +
       undoButtonHtml() +
       '<table style="margin-top:16px;"><thead><tr><th>Hits</th><th>New target</th></tr></thead><tbody>' +
       (histRows || '<tr><td colspan="2" style="color:var(--text-muted);">No throws yet</td></tr>') +
       '</tbody></table>' +
       '<button class="reset-btn" id="reset-btn">Reset game</button>';
 
-    document.querySelectorAll('.atc-hit-btn').forEach(function(b){
-      b.addEventListener('click', function(){ submitAtcHits(parseInt(b.dataset.hits, 10)); });
+    document.querySelectorAll('.atc-num-btn').forEach(function(b){
+      b.addEventListener('click', function(){ hitAtcNumber(parseInt(b.dataset.num, 10)); });
     });
+    document.getElementById('atc-miss-btn').addEventListener('click', missAtc);
     wireUndoButton();
     document.getElementById('reset-btn').addEventListener('click', resetGame);
   }
@@ -2101,13 +2221,15 @@
       '<tbody>' + numberRows + pointsRow + '</tbody></table></div>' +
       '<div class="turn-row">' + avatarHtml(getProfile(thrower).photo, thrower) + '<p>' + thrower + '&rsquo;s turn &middot; dart ' + (state.cricketDartsThisTurn + 1) + ' of 3</p></div>' +
       '<div class="cricket-target-grid" id="cricket-target-grid">' + targetButtons + '</div>' +
-      '<button id="end-turn-btn" style="width:100%; margin-top:12px;">End turn</button>' +
+      '<button type="button" class="dart-mult-btn miss-btn" id="cricket-miss-btn" style="width:100%; margin-top:8px;">Miss</button>' +
+      '<button id="end-turn-btn" style="width:100%; margin-top:8px;">End turn</button>' +
       undoButtonHtml() +
       '<button class="reset-btn" id="reset-btn">Reset game</button>';
 
     document.querySelectorAll('.cricket-target').forEach(function(b){
       b.addEventListener('click', function(){ hitCricketNumber(b.dataset.key); });
     });
+    document.getElementById('cricket-miss-btn').addEventListener('click', missCricket);
     document.getElementById('end-turn-btn').addEventListener('click', endCricketTurn);
     wireUndoButton();
     document.getElementById('reset-btn').addEventListener('click', resetGame);
@@ -2198,7 +2320,7 @@
   }
 
   function maybePlaySnippet(name, turnSum){
-    if (state.game !== '200') return;
+    if (['200', '501', '301'].indexOf(state.game) === -1) return;
     if (turnSum <= 70) return;
     var profile = getProfile(name);
     if (!profileHasAudio(profile)) return;
@@ -2256,7 +2378,7 @@
     document.getElementById('main-menu-btn').addEventListener('click', backToChooseGame);
     document.getElementById('players-btn-finish').addEventListener('click', function(){ setActiveView('players'); });
     if (song) {
-      playLibraryTrack('win-song-embed', { title: song.title, url: song.url }, 60000);
+      playLibraryTrack('win-song-embed', { title: song.title, url: song.url }, 60000, false);
     }
     var fwCanvas = document.getElementById('fireworks-canvas');
     if (fwCanvas) launchFireworks(fwCanvas);
@@ -2542,15 +2664,30 @@
     });
   }
 
+  var changelogVisibleCount = 5;
+  function renderChangelogList(){
+    var panel = document.getElementById('changelog-panel');
+    if (!panel) return;
+    var visible = CHANGELOG.slice(0, changelogVisibleCount);
+    var rowsHtml = visible.map(function(c){
+      return '<div class="cl-row"><span class="cl-v">v' + c.v + '</span><span class="cl-notes">' + c.notes + '</span></div>';
+    }).join('');
+    var moreHtml = (changelogVisibleCount < CHANGELOG.length)
+      ? '<button type="button" id="changelog-load-more-btn" style="width:100%; margin-top:8px;">Load 5 more (' + (CHANGELOG.length - changelogVisibleCount) + ' left)</button>'
+      : '';
+    panel.innerHTML = rowsHtml + moreHtml;
+    var moreBtn = document.getElementById('changelog-load-more-btn');
+    if (moreBtn) moreBtn.addEventListener('click', function(){
+      changelogVisibleCount += 5;
+      renderChangelogList();
+    });
+  }
+
   function initFooter(){
     var versionLabel = document.getElementById('version-label');
     if (versionLabel) versionLabel.textContent = 'v' + APP_VERSION;
+    renderChangelogList();
     var panel = document.getElementById('changelog-panel');
-    if (panel) {
-      panel.innerHTML = CHANGELOG.map(function(c){
-        return '<div class="cl-row"><span class="cl-v">v' + c.v + '</span><span class="cl-notes">' + c.notes + '</span></div>';
-      }).join('');
-    }
     var toggle = document.getElementById('changelog-toggle');
     if (toggle) {
       toggle.addEventListener('click', function(){
