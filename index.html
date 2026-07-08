@@ -623,24 +623,57 @@
     }
   }
   var SILENT_WAV = 'data:audio/wav;base64,UklGRiwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQgAAACAgICAgICAgA==';
+  var persistentAudioEls = {};
+  function getPersistentAudio(containerId){
+    if (!persistentAudioEls[containerId]) {
+      var el = new Audio();
+      el.setAttribute('playsinline', '');
+      el.style.display = 'none';
+      document.body.appendChild(el);
+      persistentAudioEls[containerId] = el;
+    }
+    return persistentAudioEls[containerId];
+  }
   var audioUnlocked = false;
   function unlockAudioPlayback(){
     if (audioUnlocked) return;
     audioUnlocked = true;
     try {
-      var silent = new Audio(SILENT_WAV);
-      silent.volume = 0.01;
-      var p = silent.play();
-      if (p && p.catch) p.catch(function(){});
+      var ctx = getAudioCtx();
+      if (ctx) {
+        var t = ctx.currentTime;
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.frequency.value = 440;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.05, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+        osc.connect(gain).connect(getMasterGain(ctx));
+        osc.start(t);
+        osc.stop(t + 0.1);
+      }
     } catch(e){}
+    ['snippet-embed', 'win-song-embed'].forEach(function(id){
+      try {
+        var el = getPersistentAudio(id);
+        el.src = SILENT_WAV;
+        el.volume = 0.01;
+        var p = el.play();
+        if (p && p.catch) p.catch(function(){});
+      } catch(e){}
+    });
   }
   function initAudioUnlock(){
-    document.addEventListener('touchend', unlockAudioPlayback, { once: true, passive: true });
-    document.addEventListener('click', unlockAudioPlayback, { once: true });
+    var opts = { capture: true, once: true, passive: true };
+    document.addEventListener('touchstart', unlockAudioPlayback, opts);
+    document.addEventListener('touchend', unlockAudioPlayback, opts);
+    document.addEventListener('mousedown', unlockAudioPlayback, opts);
+    document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.7.1';
+  var APP_VERSION = '4.7.2';
   var CHANGELOG = [
+    { v: '4.7.2', notes: 'Strengthened the iOS Safari audio fix from v4.7.1, since it was still inconsistent \u2014 turned out the real problem was that every snippet and win song created a brand-new audio player behind the scenes, and iOS doesn\u2019t reliably carry the "okay to play sound" permission over to a player it hasn\u2019t seen before. Snippets and win songs now reuse the same two players for the whole session instead of creating fresh ones each time, and the very first tap anywhere primes those specific players (plus the click-sound engine) as early as possible, before anything else can grab the phone\u2019s audio.' },
     { v: '4.7.1', notes: 'Fixed a known iOS Safari quirk where win songs and 70+ snippets stayed silent until you pressed the physical volume button \u2014 Safari sometimes won\u2019t route audio out loud from a freshly created player until the phone\u2019s audio hardware gets "woken up." The app now quietly primes audio playback on your very first tap anywhere, before any snippet or win song needs to play, so it should work without needing to touch the volume button.' },
     { v: '4.7.0', notes: 'CC Darts is now installable as a real app: "Add to Home Screen" gives it a proper dartboard icon and a full-screen launch (no browser bar), and it now works offline if your connection drops mid-game. Added haptic feedback \u2014 a light tap on every dart scored, a firmer double-buzz on a bust, and a celebratory buzz pattern on the win (Android only; iOS Safari doesn\u2019t support vibration). Reworked the saved-players picker: the edit gear is now built into the same row instead of a separate button next to it, and tapping it expands the edit form right under that player instead of jumping to a panel at the bottom of the list.' },
     { v: '4.6.0', notes: 'Removed the "Background" color picker from Settings \u2014 it never actually did anything since the animated background sits on top of it, so it was just a dead control. Fixed the last couple of spots still saying "50+" for the win-song snippet trigger; it\u2019s been 70+ since v4.0.0. Saved-players picker in game setup now shows everyone\u2019s profile photo and is laid out as a clean list (avatar, name, checkmark when selected) instead of a row of cramped chips. Stats now track total misses per player, shown in both the leaderboard and the detailed breakdown. The dart chips and "X needed to win" during a turn are now centered and noticeably bigger so the number you actually need is easy to read at a glance.' },
@@ -1521,8 +1554,10 @@
   function playLibraryTrack(containerId, track, durationMs, showLabel){
     var target = document.getElementById(containerId);
     if (!target || !track) return;
-    stopAudio(containerId);
-    var audio = new Audio(track.url);
+    var audio = getPersistentAudio(containerId);
+    try { audio.pause(); } catch(e){}
+    audio.src = track.url;
+    try { audio.currentTime = 0; } catch(e){}
     audio.volume = loadMusicVolume();
     window.__ckdAudio[containerId] = audio;
     if (showLabel !== false) {
@@ -1543,9 +1578,9 @@
     if (durationMs) {
       setTimeout(function(){ stopAudio(containerId); }, durationMs);
     }
-    audio.addEventListener('ended', function(){
+    audio.onended = function(){
       if (window.__ckdAudio[containerId] === audio) window.__ckdAudio[containerId] = null;
-    });
+    };
   }
   function loadHistory(){
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
