@@ -658,6 +658,7 @@
       try {
         var el = getPersistentAudio(id);
         el.src = SILENT_WAV;
+        el.load();
         el.volume = 0.01;
         var p = el.play();
         if (p && p.catch) p.catch(function(){});
@@ -672,8 +673,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.1';
+  var APP_VERSION = '4.8.2';
   var CHANGELOG = [
+    { v: '4.8.2', notes: 'Fixed inconsistent song playback \u2014 two real bugs. First: saving a player\u2019s songs from the in-game player picker (as opposed to the Players tab) was silently cutting their song list down to 3, even though the picker lets you choose up to 5, so a player\u2019s 4th/5th song could never play. Second, and the bigger one: since v4.7.2 win songs and snippets reuse the same audio player instead of creating a new one each time, but it was missing an explicit reload step when switching to a different song\u2019s file \u2014 on some phones that meant only songs the player had happened to load before would actually play, while a genuinely new song would fail silently. Both are fixed now, and a failed song shows a manual Play button instead of just going quiet.' },
     { v: '4.8.1', notes: 'The saved-players picker in game setup is now a responsive grid instead of one player per row \u2014 several players fit side by side, so a long roster no longer means a lot of scrolling to reach the "Start game" button. Tapping a player\u2019s edit gear still expands their edit form the same as before, now spanning the full width beneath their row.' },
     { v: '4.8.0', notes: 'Added solo/single-player mode \u2014 pick 1 player in Free for all setup for practice: countdown games work as a normal solo countdown, Around the Clock tracks your own hits, and Cricket wins as soon as you\u2019ve closed every number (no opponents to beat). The trivial "Who goes first?" picker is skipped when it\u2019s just you. Also widened the app so the dart keypad, player cards, and Cricket/Around the Clock boards can spread across more of the screen during an active game and fit with less scrolling, especially on tablets or wider browser windows \u2014 the setup and stats screens stay a bit narrower for readability.' },
     { v: '4.7.3', notes: 'Removed the standalone Music tab from the top bar \u2014 it was a separate browse-and-manage-everything page that\u2019s redundant now that every player\u2019s edit screen already has its own search box to find and add songs directly. Song search, the shared song library, and win songs/snippets all still work exactly the same; it\u2019s just no longer a dedicated tab up top.' },
@@ -1513,8 +1515,10 @@
     if (!target || !track) return;
     var audio = getPersistentAudio(containerId);
     try { audio.pause(); } catch(e){}
+    audio.onended = null;
+    audio.onerror = null;
     audio.src = track.url;
-    try { audio.currentTime = 0; } catch(e){}
+    audio.load();
     audio.volume = loadMusicVolume();
     window.__ckdAudio[containerId] = audio;
     if (showLabel !== false) {
@@ -1522,15 +1526,17 @@
     } else {
       target.innerHTML = '';
     }
+    function showFallback(){
+      target.innerHTML =
+        '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654;' +
+        (showLabel !== false ? (' Play ' + track.title) : '') + '</button>';
+      var fb = document.getElementById(containerId + '-fallback');
+      if (fb) fb.addEventListener('click', function(){ audio.play().catch(function(){}); });
+    }
+    audio.onerror = showFallback;
     var playAttempt = audio.play();
     if (playAttempt && playAttempt.catch) {
-      playAttempt.catch(function(){
-        target.innerHTML =
-          '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654;' +
-          (showLabel !== false ? (' Play ' + track.title) : '') + '</button>';
-        var fb = document.getElementById(containerId + '-fallback');
-        if (fb) fb.addEventListener('click', function(){ audio.play(); });
-      });
+      playAttempt.catch(showFallback);
     }
     if (durationMs) {
       setTimeout(function(){ stopAudio(containerId); }, durationMs);
@@ -2209,7 +2215,7 @@
           renameRosterPlayer(oldName, newName);
         }
         var existingProfile = getProfile(oldName);
-        var trackIds = (state.pendingTrackIds || []).slice(0, 3);
+        var trackIds = (state.pendingTrackIds || []).slice(0, 5);
         var profileToSave = {
           trackIds: trackIds,
           photo: (state.pendingPhoto === undefined) ? (existingProfile.photo || null) : state.pendingPhoto
