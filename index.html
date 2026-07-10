@@ -43,7 +43,8 @@
     justify-content: center;
     padding: 70px 16px 64px;
   }
-  #app-wrap { width: 100%; max-width: 680px; position: relative; z-index: 1; }
+  #app-wrap { width: 100%; max-width: 760px; position: relative; z-index: 1; transition: max-width 0.15s ease; }
+  #app-wrap.wide-play { max-width: 1040px; }
   #app { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 20px; box-shadow: 0 16px 48px rgba(0,0,0,0.45); }
   h1 {
     font-family: 'Bungee', 'Poppins', cursive;
@@ -670,8 +671,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.7.3';
+  var APP_VERSION = '4.8.0';
   var CHANGELOG = [
+    { v: '4.8.0', notes: 'Added solo/single-player mode \u2014 pick 1 player in Free for all setup for practice: countdown games work as a normal solo countdown, Around the Clock tracks your own hits, and Cricket wins as soon as you\u2019ve closed every number (no opponents to beat). The trivial "Who goes first?" picker is skipped when it\u2019s just you. Also widened the app so the dart keypad, player cards, and Cricket/Around the Clock boards can spread across more of the screen during an active game and fit with less scrolling, especially on tablets or wider browser windows \u2014 the setup and stats screens stay a bit narrower for readability.' },
     { v: '4.7.3', notes: 'Removed the standalone Music tab from the top bar \u2014 it was a separate browse-and-manage-everything page that\u2019s redundant now that every player\u2019s edit screen already has its own search box to find and add songs directly. Song search, the shared song library, and win songs/snippets all still work exactly the same; it\u2019s just no longer a dedicated tab up top.' },
     { v: '4.7.2', notes: 'Strengthened the iOS Safari audio fix from v4.7.1, since it was still inconsistent \u2014 turned out the real problem was that every snippet and win song created a brand-new audio player behind the scenes, and iOS doesn\u2019t reliably carry the "okay to play sound" permission over to a player it hasn\u2019t seen before. Snippets and win songs now reuse the same two players for the whole session instead of creating fresh ones each time, and the very first tap anywhere primes those specific players (plus the click-sound engine) as early as possible, before anything else can grab the phone\u2019s audio.' },
     { v: '4.7.1', notes: 'Fixed a known iOS Safari quirk where win songs and 70+ snippets stayed silent until you pressed the physical volume button \u2014 Safari sometimes won\u2019t route audio out loud from a freshly created player until the phone\u2019s audio hardware gets "woken up." The app now quietly primes audio playback on your very first tap anywhere, before any snippet or win song needs to play, so it should work without needing to touch the volume button.' },
@@ -2025,7 +2027,7 @@
     var body = '';
     if (state.mode === 'ffa') {
       var countButtons = '';
-      for (var n = 2; n <= 8; n++) {
+      for (var n = 1; n <= 8; n++) {
         countButtons += '<button data-n="' + n + '" class="' + (state.count === n ? 'active' : '') + '">' + n + '</button>';
       }
       var nameInputs = '';
@@ -2106,7 +2108,9 @@
     }
 
     var firstHtml = '';
-    if (state.mode === 'ffa') {
+    if (state.mode === 'ffa' && state.count === 1) {
+      firstHtml = '';
+    } else if (state.mode === 'ffa') {
       var firstButtons = '';
       for (var fi = 0; fi < state.count; fi++) {
         var fname = (state.names[fi] || '').trim() || ('Player ' + (fi + 1));
@@ -2900,6 +2904,11 @@
     var trippyBg = document.getElementById('trippy-bg');
     if (trippyBg) {
       trippyBg.style.display = 'block';
+    }
+    var appWrap = document.getElementById('app-wrap');
+    if (appWrap) {
+      var isWidePlay = state.activeView === 'play' && state.stage === 'playing';
+      appWrap.classList.toggle('wide-play', isWidePlay);
     }
     updateTabActiveStates();
     if (state.activeView === 'history') renderHistoryTab('app');
