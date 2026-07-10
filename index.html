@@ -347,7 +347,6 @@
 </div>
 <button type="button" id="settings-btn" class="settings-fab" aria-label="Settings">&#9881;</button>
 <div class="top-right-controls">
-  <button type="button" id="music-btn" class="players-fab" aria-label="Music">&#127925; <span class="btn-label">Music</span></button>
   <button type="button" id="history-btn" class="players-fab" aria-label="History">&#128220; <span class="btn-label">History</span></button>
   <button type="button" id="stats-btn" class="players-fab" aria-label="Stats">&#128202; <span class="btn-label">Stats</span></button>
   <button type="button" id="players-btn" class="players-fab" aria-label="Players">&#128101; <span class="btn-label">Players</span></button>
@@ -671,8 +670,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.7.2';
+  var APP_VERSION = '4.7.3';
   var CHANGELOG = [
+    { v: '4.7.3', notes: 'Removed the standalone Music tab from the top bar \u2014 it was a separate browse-and-manage-everything page that\u2019s redundant now that every player\u2019s edit screen already has its own search box to find and add songs directly. Song search, the shared song library, and win songs/snippets all still work exactly the same; it\u2019s just no longer a dedicated tab up top.' },
     { v: '4.7.2', notes: 'Strengthened the iOS Safari audio fix from v4.7.1, since it was still inconsistent \u2014 turned out the real problem was that every snippet and win song created a brand-new audio player behind the scenes, and iOS doesn\u2019t reliably carry the "okay to play sound" permission over to a player it hasn\u2019t seen before. Snippets and win songs now reuse the same two players for the whole session instead of creating fresh ones each time, and the very first tap anywhere primes those specific players (plus the click-sound engine) as early as possible, before anything else can grab the phone\u2019s audio.' },
     { v: '4.7.1', notes: 'Fixed a known iOS Safari quirk where win songs and 70+ snippets stayed silent until you pressed the physical volume button \u2014 Safari sometimes won\u2019t route audio out loud from a freshly created player until the phone\u2019s audio hardware gets "woken up." The app now quietly primes audio playback on your very first tap anywhere, before any snippet or win song needs to play, so it should work without needing to touch the volume button.' },
     { v: '4.7.0', notes: 'CC Darts is now installable as a real app: "Add to Home Screen" gives it a proper dartboard icon and a full-screen launch (no browser bar), and it now works offline if your connection drops mid-game. Added haptic feedback \u2014 a light tap on every dart scored, a firmer double-buzz on a bust, and a celebratory buzz pattern on the win (Android only; iOS Safari doesn\u2019t support vibration). Reworked the saved-players picker: the edit gear is now built into the same row instead of a separate button next to it, and tapping it expands the edit form right under that player instead of jumping to a panel at the bottom of the list.' },
@@ -924,53 +924,6 @@
   }
   function initGlobalMenuButton(){
     document.getElementById('global-menu-btn').addEventListener('click', goToMainMenuGlobal);
-  }
-
-  function renderMusicPanel(containerId){
-    var panel = document.getElementById(containerId);
-    var lib = loadLibrary();
-    panel.innerHTML =
-      '<p class="label" style="margin-top:0;">Music library</p>' +
-      '<p style="font-size:11px; color:var(--text-muted); margin:0 0 8px;">Search to add songs here, then assign them to players from the Players tab.</p>' +
-      '<input type="text" id="music-search-input" placeholder="Search for a song or artist..." />' +
-      '<div id="music-search-results" style="margin-bottom:16px;"></div>' +
-      '<p class="label">All songs (' + lib.length + ')</p>' +
-      '<div id="music-full-list"></div>';
-
-    function renderFullList(){
-      var listEl = document.getElementById('music-full-list');
-      var current = loadLibrary();
-      if (!current.length) {
-        listEl.innerHTML = '<div class="empty-state" style="padding:16px 0;">No songs yet. Search above to add some.</div>';
-        return;
-      }
-      listEl.innerHTML = current.map(function(t){
-        var safeTitle = t.title.replace(/"/g, '&quot;');
-        var coverHtml = t.cover ? '<img class="lib-row-cover" src="' + t.cover + '" alt="" />' : '';
-        return '<div class="chip-wrap" style="width:100%; margin-bottom:6px;">' +
-          coverHtml +
-          '<span class="chip" style="cursor:default; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + safeTitle + '</span>' +
-          '<button type="button" class="chip-settings music-delete-btn" data-id="' + t.id + '" aria-label="Remove ' + safeTitle + '">&#10005;</button>' +
-        '</div>';
-      }).join('');
-      listEl.querySelectorAll('.music-delete-btn').forEach(function(b){
-        b.addEventListener('click', function(){
-          if (window.confirm('Remove this song from the library? It will also be unassigned from any players using it.')) {
-            deleteLibraryTrack(b.dataset.id);
-            renderFullList();
-          }
-        });
-      });
-    }
-    renderFullList();
-
-    wireLibrarySearchBox('music-search-input', 'music-search-results', function(){
-      renderFullList();
-    });
-  }
-
-  function initMusicButton(){
-    document.getElementById('music-btn').addEventListener('click', function(){ setActiveView('music'); });
   }
 
   function initHistoryStatsButtons(){
@@ -2952,13 +2905,12 @@
     if (state.activeView === 'history') renderHistoryTab('app');
     else if (state.activeView === 'stats') renderStatsTab('app');
     else if (state.activeView === 'players') renderPlayersPanel('app');
-    else if (state.activeView === 'music') renderMusicPanel('app');
     else if (state.activeView === 'settings') renderSettingsTab('app');
     else renderPlayTab();
   }
 
   function updateTabActiveStates(){
-    var map = { music: 'music-btn', history: 'history-btn', stats: 'stats-btn', players: 'players-btn' };
+    var map = { history: 'history-btn', stats: 'stats-btn', players: 'players-btn' };
     Object.keys(map).forEach(function(view){
       var btn = document.getElementById(map[view]);
       if (!btn) return;
@@ -3014,7 +2966,6 @@
   initFooter();
   initTheme();
   initSettingsButton();
-  initMusicButton();
   initPlayersPanel();
   initHistoryStatsButtons();
   initGlobalMenuButton();
