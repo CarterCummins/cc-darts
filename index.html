@@ -440,8 +440,18 @@
   function saveMusicVolume(v){
     try { localStorage.setItem(MUSIC_VOLUME_KEY, String(v)); } catch(e){}
   }
+  var musicGainNode = null;
+  function getMusicGain(ctx){
+    if (!musicGainNode) {
+      musicGainNode = ctx.createGain();
+      musicGainNode.gain.value = loadMusicVolume();
+      musicGainNode.connect(ctx.destination);
+    }
+    return musicGainNode;
+  }
   function setMusicVolume(v){
     saveMusicVolume(v);
+    if (musicGainNode) musicGainNode.gain.value = v;
     Object.keys(window.__ckdAudio || {}).forEach(function(k){
       var a = window.__ckdAudio[k];
       if (a) a.volume = v;
@@ -673,8 +683,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.2';
+  var APP_VERSION = '4.8.3';
   var CHANGELOG = [
+    { v: '4.8.3', notes: 'Rebuilt how snippets and win songs actually play, since the previous fix still wasn\u2019t reliable and the fallback "Play" button that appeared on failure wasn\u2019t even clickable. They now play through the same audio engine your click sounds already use reliably, instead of a standard audio player that iOS Safari can silently block. That engine, once unlocked on your first tap, doesn\u2019t need a fresh permission check for every single play \u2014 so it should now autoplay consistently, every time, for every player. There\u2019s no more Play button; if a song genuinely can\u2019t load, it now fails silently instead of showing a broken control.' },
     { v: '4.8.2', notes: 'Fixed inconsistent song playback \u2014 two real bugs. First: saving a player\u2019s songs from the in-game player picker (as opposed to the Players tab) was silently cutting their song list down to 3, even though the picker lets you choose up to 5, so a player\u2019s 4th/5th song could never play. Second, and the bigger one: since v4.7.2 win songs and snippets reuse the same audio player instead of creating a new one each time, but it was missing an explicit reload step when switching to a different song\u2019s file \u2014 on some phones that meant only songs the player had happened to load before would actually play, while a genuinely new song would fail silently. Both are fixed now, and a failed song shows a manual Play button instead of just going quiet.' },
     { v: '4.8.1', notes: 'The saved-players picker in game setup is now a responsive grid instead of one player per row \u2014 several players fit side by side, so a long roster no longer means a lot of scrolling to reach the "Start game" button. Tapping a player\u2019s edit gear still expands their edit form the same as before, now spanning the full width beneath their row.' },
     { v: '4.8.0', notes: 'Added solo/single-player mode \u2014 pick 1 player in Free for all setup for practice: countdown games work as a normal solo countdown, Around the Clock tracks your own hits, and Cricket wins as soon as you\u2019ve closed every number (no opponents to beat). The trivial "Who goes first?" picker is skipped when it\u2019s just you. Also widened the app so the dart keypad, player cards, and Cricket/Around the Clock boards can spread across more of the screen during an active game and fit with less scrolling, especially on tablets or wider browser windows \u2014 the setup and stats screens stay a bit narrower for readability.' },
@@ -1501,8 +1512,19 @@
   }
 
   window.__ckdAudio = window.__ckdAudio || {};
+  var activeBufferSources = {};
+  var audioBufferCache = {};
+
+  function stopBufferSource(containerId){
+    var src = activeBufferSources[containerId];
+    if (src) {
+      try { src.stop(); } catch(e){}
+      activeBufferSources[containerId] = null;
+    }
+  }
 
   function stopAudio(containerId){
+    stopBufferSource(containerId);
     var existing = window.__ckdAudio[containerId];
     if (existing) {
       try { existing.pause(); } catch(e){}
@@ -1510,9 +1532,17 @@
     }
   }
 
-  function playLibraryTrack(containerId, track, durationMs, showLabel){
-    var target = document.getElementById(containerId);
-    if (!target || !track) return;
+  function loadAudioBuffer(ctx, url){
+    if (audioBufferCache[url]) return audioBufferCache[url];
+    var p = fetch(url)
+      .then(function(r){ if (!r.ok) throw new Error('fetch failed'); return r.arrayBuffer(); })
+      .then(function(buf){ return ctx.decodeAudioData(buf); })
+      .catch(function(err){ delete audioBufferCache[url]; throw err; });
+    audioBufferCache[url] = p;
+    return p;
+  }
+
+  function playLibraryTrackFallback(containerId, track, durationMs){
     var audio = getPersistentAudio(containerId);
     try { audio.pause(); } catch(e){}
     audio.onended = null;
@@ -1521,29 +1551,47 @@
     audio.load();
     audio.volume = loadMusicVolume();
     window.__ckdAudio[containerId] = audio;
-    if (showLabel !== false) {
-      target.innerHTML = '<p class="label" style="margin:0;">' + track.title + '</p>';
-    } else {
-      target.innerHTML = '';
-    }
-    function showFallback(){
-      target.innerHTML =
-        '<button type="button" class="chip embed-fallback" id="' + containerId + '-fallback">&#9654;' +
-        (showLabel !== false ? (' Play ' + track.title) : '') + '</button>';
-      var fb = document.getElementById(containerId + '-fallback');
-      if (fb) fb.addEventListener('click', function(){ audio.play().catch(function(){}); });
-    }
-    audio.onerror = showFallback;
     var playAttempt = audio.play();
-    if (playAttempt && playAttempt.catch) {
-      playAttempt.catch(showFallback);
-    }
+    if (playAttempt && playAttempt.catch) playAttempt.catch(function(){});
     if (durationMs) {
       setTimeout(function(){ stopAudio(containerId); }, durationMs);
     }
     audio.onended = function(){
       if (window.__ckdAudio[containerId] === audio) window.__ckdAudio[containerId] = null;
     };
+  }
+
+  function playLibraryTrack(containerId, track, durationMs, showLabel){
+    var target = document.getElementById(containerId);
+    if (!target || !track) return;
+    stopAudio(containerId);
+    if (showLabel !== false) {
+      target.innerHTML = '<p class="label" style="margin:0;">' + track.title + '</p>';
+    } else {
+      target.innerHTML = '';
+    }
+    var ctx = getAudioCtx();
+    if (ctx) {
+      loadAudioBuffer(ctx, track.url).then(function(buffer){
+        var src = ctx.createBufferSource();
+        src.buffer = buffer;
+        var gain = getMusicGain(ctx);
+        gain.gain.value = loadMusicVolume();
+        src.connect(gain);
+        src.start(0);
+        activeBufferSources[containerId] = src;
+        src.onended = function(){
+          if (activeBufferSources[containerId] === src) activeBufferSources[containerId] = null;
+        };
+        if (durationMs) {
+          setTimeout(function(){ stopBufferSource(containerId); }, durationMs);
+        }
+      }).catch(function(){
+        playLibraryTrackFallback(containerId, track, durationMs);
+      });
+    } else {
+      playLibraryTrackFallback(containerId, track, durationMs);
+    }
   }
   function loadHistory(){
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
