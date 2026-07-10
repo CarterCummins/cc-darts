@@ -84,7 +84,9 @@
   .count-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
   .count-row button { min-width: 44px; }
   .count-row button.active { border: 2px solid var(--border-accent); color: var(--border-accent); }
-  #name-list input, .team-block input { margin-bottom: 8px; }
+  #name-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  #name-list input { margin-bottom: 0; }
+  .team-block input { margin-bottom: 8px; }
   .team-block { background: var(--card); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
   .team-block .team-label { font-size: 13px; font-weight: 500; margin: 0 0 8px; }
   .team-block.a .team-label { color: var(--teamA); }
@@ -213,8 +215,8 @@
   .settings-panel input[type="color"] { width: 100%; height: 36px; padding: 2px; margin-top: 4px; cursor: pointer; }
   .settings-section-heading { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; color: var(--text-muted); margin: 18px 0 10px; padding-top: 14px; border-top: 1px solid var(--border); }
   .settings-section-heading:first-child { margin-top: 0; padding-top: 0; border-top: none; }
-  .player-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-  .player-row:last-child { border-bottom: none; }
+  .player-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+  .player-row { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
   .player-row-info { flex: 1; min-width: 0; }
   .player-row-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .player-row-stats { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
@@ -683,8 +685,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.4';
+  var APP_VERSION = '4.8.5';
   var CHANGELOG = [
+    { v: '4.8.5', notes: 'Finally found the real cause of the song playback issues \u2014 the diagnostic line from last version showed "HTTP 403" errors, which means Deezer\u2019s preview links quietly expire after a while (that\u2019s on their end, not a bug in the app). Songs now fetch a fresh, working preview link right before every single play, so a song that stops working after sitting for a while will just start working again on its own, without needing to delete and re-add it. Also fixed a bug where hitting Main Menu right after winning could restart or double-play the win song for a moment before it stopped. And two layout changes: the player-name text boxes in game setup, and every card in the Players tab, are now a responsive grid instead of one-per-row, so they take up a lot less vertical space \u2014 all the same info is still there, just packed tighter.' },
     { v: '4.8.4', notes: 'Still chasing the song playback issue \u2014 rather than guess at another fix blind, this version adds a tiny diagnostic line (small grey text, not a button) that appears under a song\u2019s title only when it fails to play, showing the actual technical reason. If it still happens, screenshot or read out what that line says \u2014 it\u2019ll say exactly why (network error, blocked request, decode failure, etc.) instead of just going quiet, which will point to the real fix instead of another guess.' },
     { v: '4.8.3', notes: 'Rebuilt how snippets and win songs actually play, since the previous fix still wasn\u2019t reliable and the fallback "Play" button that appeared on failure wasn\u2019t even clickable. They now play through the same audio engine your click sounds already use reliably, instead of a standard audio player that iOS Safari can silently block. That engine, once unlocked on your first tap, doesn\u2019t need a fresh permission check for every single play \u2014 so it should now autoplay consistently, every time, for every player. There\u2019s no more Play button; if a song genuinely can\u2019t load, it now fails silently instead of showing a broken control.' },
     { v: '4.8.2', notes: 'Fixed inconsistent song playback \u2014 two real bugs. First: saving a player\u2019s songs from the in-game player picker (as opposed to the Players tab) was silently cutting their song list down to 3, even though the picker lets you choose up to 5, so a player\u2019s 4th/5th song could never play. Second, and the bigger one: since v4.7.2 win songs and snippets reuse the same audio player instead of creating a new one each time, but it was missing an explicit reload step when switching to a different song\u2019s file \u2014 on some phones that meant only songs the player had happened to load before would actually play, while a genuinely new song would fail silently. Both are fixed now, and a failed song shows a manual Play button instead of just going quiet.' },
@@ -937,8 +940,8 @@
   }
 
   function goToMainMenuGlobal(){
-    setActiveView('play');
     backToChooseGame();
+    setActiveView('play');
   }
   function initGlobalMenuButton(){
     document.getElementById('global-menu-btn').addEventListener('click', goToMainMenuGlobal);
@@ -982,7 +985,7 @@
     panel.innerHTML =
       '<p class="label" style="margin-top:0;">Players</p>' +
       addFormHtml +
-      (roster.length ? rows : '<div class="empty-state" style="padding:16px 0;">No saved players yet.</div>');
+      (roster.length ? ('<div class="player-grid">' + rows + '</div>') : '<div class="empty-state" style="padding:16px 0;">No saved players yet.</div>');
 
     var openBtn = document.getElementById('pp-add-open-btn');
     if (openBtn) openBtn.addEventListener('click', function(){
@@ -1515,6 +1518,12 @@
   window.__ckdAudio = window.__ckdAudio || {};
   var activeBufferSources = {};
   var audioBufferCache = {};
+  var playGeneration = {};
+
+  function bumpGeneration(containerId){
+    playGeneration[containerId] = (playGeneration[containerId] || 0) + 1;
+    return playGeneration[containerId];
+  }
 
   function stopBufferSource(containerId){
     var src = activeBufferSources[containerId];
@@ -1525,6 +1534,7 @@
   }
 
   function stopAudio(containerId){
+    bumpGeneration(containerId);
     stopBufferSource(containerId);
     var existing = window.__ckdAudio[containerId];
     if (existing) {
@@ -1543,6 +1553,25 @@
     return p;
   }
 
+  function updateLibraryTrackUrl(id, url){
+    var lib = loadLibrary();
+    for (var i = 0; i < lib.length; i++) {
+      if (lib[i].id === id) { lib[i].url = url; saveLibrary(lib); return; }
+    }
+  }
+
+  function refreshTrackPreviewUrl(track){
+    return fetch(LIB_PROXY_BASE + '/search?q=' + encodeURIComponent(track.title))
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        var results = (data && data.results) || [];
+        var fresh = results.length && results[0].preview;
+        if (!fresh) throw new Error('no refresh match');
+        track.url = fresh;
+        if (track.id) updateLibraryTrackUrl(track.id, fresh);
+      });
+  }
+
   function showAudioDiagnostic(target, msg){
     var existing = target.querySelector('.audio-diag');
     if (existing) existing.remove();
@@ -1553,7 +1582,8 @@
     target.appendChild(diag);
   }
 
-  function playLibraryTrackFallback(containerId, track, durationMs, target, priorErrMsg){
+  function playLibraryTrackFallback(containerId, track, durationMs, target, priorErrMsg, myGen){
+    if (playGeneration[containerId] !== myGen) return;
     var audio = getPersistentAudio(containerId);
     try { audio.pause(); } catch(e){}
     audio.onended = null;
@@ -1563,7 +1593,7 @@
     audio.volume = loadMusicVolume();
     window.__ckdAudio[containerId] = audio;
     function reportFailure(reason){
-      if (target) {
+      if (target && playGeneration[containerId] === myGen) {
         var combined = (priorErrMsg ? ('WebAudio: ' + priorErrMsg + ' \u00b7 ') : '') + 'Fallback: ' + reason;
         showAudioDiagnostic(target, combined);
       }
@@ -1577,7 +1607,7 @@
       playAttempt.catch(function(err){ reportFailure((err && err.name) || String(err)); });
     }
     if (durationMs) {
-      setTimeout(function(){ stopAudio(containerId); }, durationMs);
+      setTimeout(function(){ if (playGeneration[containerId] === myGen) stopAudio(containerId); }, durationMs);
     }
     audio.onended = function(){
       if (window.__ckdAudio[containerId] === audio) window.__ckdAudio[containerId] = null;
@@ -1588,34 +1618,40 @@
     var target = document.getElementById(containerId);
     if (!target || !track) return;
     stopAudio(containerId);
+    var myGen = bumpGeneration(containerId);
     if (showLabel !== false) {
       target.innerHTML = '<p class="label" style="margin:0;">' + track.title + '</p>';
     } else {
       target.innerHTML = '';
     }
-    var ctx = getAudioCtx();
-    if (ctx) {
-      loadAudioBuffer(ctx, track.url).then(function(buffer){
-        var src = ctx.createBufferSource();
-        src.buffer = buffer;
-        var gain = getMusicGain(ctx);
-        gain.gain.value = loadMusicVolume();
-        src.connect(gain);
-        src.start(0);
-        activeBufferSources[containerId] = src;
-        src.onended = function(){
-          if (activeBufferSources[containerId] === src) activeBufferSources[containerId] = null;
-        };
-        if (durationMs) {
-          setTimeout(function(){ stopBufferSource(containerId); }, durationMs);
-        }
-      }).catch(function(err){
-        var msg = (err && (err.message || err.name)) || String(err);
-        playLibraryTrackFallback(containerId, track, durationMs, target, msg);
-      });
-    } else {
-      playLibraryTrackFallback(containerId, track, durationMs, target, 'no audio context');
-    }
+    refreshTrackPreviewUrl(track).catch(function(){}).then(function(){
+      if (playGeneration[containerId] !== myGen) return;
+      var ctx = getAudioCtx();
+      if (ctx) {
+        loadAudioBuffer(ctx, track.url).then(function(buffer){
+          if (playGeneration[containerId] !== myGen) return;
+          var src = ctx.createBufferSource();
+          src.buffer = buffer;
+          var gain = getMusicGain(ctx);
+          gain.gain.value = loadMusicVolume();
+          src.connect(gain);
+          src.start(0);
+          activeBufferSources[containerId] = src;
+          src.onended = function(){
+            if (activeBufferSources[containerId] === src) activeBufferSources[containerId] = null;
+          };
+          if (durationMs) {
+            setTimeout(function(){ if (playGeneration[containerId] === myGen) stopBufferSource(containerId); }, durationMs);
+          }
+        }).catch(function(err){
+          if (playGeneration[containerId] !== myGen) return;
+          var msg = (err && (err.message || err.name)) || String(err);
+          playLibraryTrackFallback(containerId, track, durationMs, target, msg, myGen);
+        });
+      } else {
+        playLibraryTrackFallback(containerId, track, durationMs, target, 'no audio context', myGen);
+      }
+    });
   }
   function loadHistory(){
     try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
