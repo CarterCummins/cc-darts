@@ -133,7 +133,8 @@
   .metric-card .m-name { font-size: 12px; color: var(--text-secondary); margin: 2px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .table-scroll { overflow-x: auto; margin-bottom: 8px; }
   .table-scroll table { min-width: 480px; }
-  .chip-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+  .chip-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 20px; align-items: start; }
+  .chip-row .edit-panel { grid-column: 1 / -1; }
   .chip { padding: 7px 14px; border-radius: 20px; font-size: 13px; }
   .picker-row { display: flex; align-items: center; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 8px 6px 10px; }
   .picker-row.used { border: 2px solid var(--border-accent); background: var(--card-active); }
@@ -671,8 +672,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.0';
+  var APP_VERSION = '4.8.1';
   var CHANGELOG = [
+    { v: '4.8.1', notes: 'The saved-players picker in game setup is now a responsive grid instead of one player per row \u2014 several players fit side by side, so a long roster no longer means a lot of scrolling to reach the "Start game" button. Tapping a player\u2019s edit gear still expands their edit form the same as before, now spanning the full width beneath their row.' },
     { v: '4.8.0', notes: 'Added solo/single-player mode \u2014 pick 1 player in Free for all setup for practice: countdown games work as a normal solo countdown, Around the Clock tracks your own hits, and Cricket wins as soon as you\u2019ve closed every number (no opponents to beat). The trivial "Who goes first?" picker is skipped when it\u2019s just you. Also widened the app so the dart keypad, player cards, and Cricket/Around the Clock boards can spread across more of the screen during an active game and fit with less scrolling, especially on tablets or wider browser windows \u2014 the setup and stats screens stay a bit narrower for readability.' },
     { v: '4.7.3', notes: 'Removed the standalone Music tab from the top bar \u2014 it was a separate browse-and-manage-everything page that\u2019s redundant now that every player\u2019s edit screen already has its own search box to find and add songs directly. Song search, the shared song library, and win songs/snippets all still work exactly the same; it\u2019s just no longer a dedicated tab up top.' },
     { v: '4.7.2', notes: 'Strengthened the iOS Safari audio fix from v4.7.1, since it was still inconsistent \u2014 turned out the real problem was that every snippet and win song created a brand-new audio player behind the scenes, and iOS doesn\u2019t reliably carry the "okay to play sound" permission over to a player it hasn\u2019t seen before. Snippets and win songs now reuse the same two players for the whole session instead of creating fresh ones each time, and the very first tap anywhere primes those specific players (plus the click-sound engine) as early as possible, before anything else can grab the phone\u2019s audio.' },
