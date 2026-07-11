@@ -685,8 +685,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.5';
+  var APP_VERSION = '4.8.6';
   var CHANGELOG = [
+    { v: '4.8.6', notes: 'Snippet trigger is back to 50+ per turn instead of 70+ (and the Settings/game description text matches again) \u2014 turns out that was a tougher bar than intended. Also, a player\u2019s recent-games list in Stats now shows who they played against on each result, not just Won/Lost.' },
     { v: '4.8.5', notes: 'Finally found the real cause of the song playback issues \u2014 the diagnostic line from last version showed "HTTP 403" errors, which means Deezer\u2019s preview links quietly expire after a while (that\u2019s on their end, not a bug in the app). Songs now fetch a fresh, working preview link right before every single play, so a song that stops working after sitting for a while will just start working again on its own, without needing to delete and re-add it. Also fixed a bug where hitting Main Menu right after winning could restart or double-play the win song for a moment before it stopped. And two layout changes: the player-name text boxes in game setup, and every card in the Players tab, are now a responsive grid instead of one-per-row, so they take up a lot less vertical space \u2014 all the same info is still there, just packed tighter.' },
     { v: '4.8.4', notes: 'Still chasing the song playback issue \u2014 rather than guess at another fix blind, this version adds a tiny diagnostic line (small grey text, not a button) that appears under a song\u2019s title only when it fails to play, showing the actual technical reason. If it still happens, screenshot or read out what that line says \u2014 it\u2019ll say exactly why (network error, blocked request, decode failure, etc.) instead of just going quiet, which will point to the real fix instead of another guess.' },
     { v: '4.8.3', notes: 'Rebuilt how snippets and win songs actually play, since the previous fix still wasn\u2019t reliable and the fallback "Play" button that appeared on failure wasn\u2019t even clickable. They now play through the same audio engine your click sounds already use reliably, instead of a standard audio player that iOS Safari can silently block. That engine, once unlocked on your first tap, doesn\u2019t need a fresh permission check for every single play \u2014 so it should now autoplay consistently, every time, for every player. There\u2019s no more Play button; if a song genuinely can\u2019t load, it now fails silently instead of showing a broken control.' },
@@ -813,7 +814,7 @@
       '<label style="margin-top:10px;">Sound FX Volume<input type="range" id="sound-volume-slider" min="0" max="100" style="width:100%; margin-top:4px;" /></label>' +
       '<p class="settings-section-heading">Music</p>' +
       '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">' +
-        '<span class="label" style="margin:0;">Play win songs &amp; 70+ snippets</span>' +
+        '<span class="label" style="margin:0;">Play win songs &amp; 50+ snippets</span>' +
         '<button type="button" id="music-enabled-toggle" class="sound-btn"></button>' +
       '</div>' +
       '<label>Music Volume<input type="range" id="music-volume-slider" min="0" max="100" style="width:100%; margin-top:4px;" /></label>' +
@@ -2097,7 +2098,7 @@
   }
 
   function gameDescription(id){
-    if (id === '200') return 'Countdown from 200. 70+ throws play a snippet.';
+    if (id === '200') return 'Countdown from 200. 50+ throws play a snippet.';
     if (id === '501') return 'The standard tournament countdown.';
     if (id === '301') return 'A shorter countdown race.';
     if (id === '170') return 'The classic highest possible checkout.';
@@ -2612,7 +2613,7 @@
   function maybePlaySnippet(name, turnSum){
     if (!loadMusicEnabled()) return;
     if (['200', '501', '301'].indexOf(state.game) === -1) return;
-    if (turnSum <= 70) return;
+    if (turnSum <= 50) return;
     var profile = getProfile(name);
     if (!profileHasAudio(profile)) return;
     var track = pickProfileTrack(profile, name);
@@ -2894,6 +2895,19 @@
     return hist.slice(0, limit || 5);
   }
 
+  function opponentsLabelForGame(g, lowerName){
+    if (g.mode === 'ffa') {
+      var others = g.participants.filter(function(n){ return n.toLowerCase() !== lowerName; });
+      return others.length ? others.join(', ') : '';
+    }
+    var ownTeamIdx = g.participants.findIndex(function(team){
+      return team.some(function(n){ return n.toLowerCase() === lowerName; });
+    });
+    if (ownTeamIdx === -1) return '';
+    var otherTeam = g.participants[1 - ownTeamIdx];
+    return otherTeam ? otherTeam.join(' & ') : '';
+  }
+
   function playerStatDetailHtml(p){
     var recent = recentGamesForPlayer(p.name, 5);
     var metricsHtml =
@@ -2919,9 +2933,12 @@
         var resultHtml = isWin
           ? '<b style="color:var(--success);">Won</b>'
           : '<span style="color:var(--danger);">Lost</span>';
+        var opponents = opponentsLabelForGame(g, lowerName);
+        var opponentsHtml = opponents ? ('<div class="hi-participants">vs ' + opponents + '</div>') : '';
         return '<div class="history-item" style="margin-bottom:8px;">' +
           '<div class="hi-top"><span class="hi-date">' + formatDate(g.date) + '</span><span class="hi-mode">' + gameLabel + '</span></div>' +
           '<div class="hi-winner">' + resultHtml + '</div>' +
+          opponentsHtml +
         '</div>';
       }).join('');
     } else {
