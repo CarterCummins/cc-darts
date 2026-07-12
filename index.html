@@ -694,8 +694,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.7';
+  var APP_VERSION = '4.8.8';
   var CHANGELOG = [
+    { v: '4.8.8', notes: 'Solo practice games (1-player Free for all) no longer count toward Stats \u2014 no wins/losses, no leaderboard entry, no recent-games entry, since there was no opponent to actually beat. They still show up in History as a record that you played, just excluded from the Stats page and the Players tab\u2019s quick stat line.' },
     { v: '4.8.7', notes: 'Settings is now a pop-out panel instead of taking over the whole screen \u2014 tap the gear mid-game to adjust theme, sound, or music volume, then close it and you\u2019re back exactly where you left off, game intact. Tap the X or tap outside the panel to close it.' },
     { v: '4.8.6', notes: 'Snippet trigger is back to 50+ per turn instead of 70+ (and the Settings/game description text matches again) \u2014 turns out that was a tougher bar than intended. Also, a player\u2019s recent-games list in Stats now shows who they played against on each result, not just Won/Lost.' },
     { v: '4.8.5', notes: 'Finally found the real cause of the song playback issues \u2014 the diagnostic line from last version showed "HTTP 403" errors, which means Deezer\u2019s preview links quietly expire after a while (that\u2019s on their end, not a bug in the app). Songs now fetch a fresh, working preview link right before every single play, so a song that stops working after sitting for a while will just start working again on its own, without needing to delete and re-add it. Also fixed a bug where hitting Main Menu right after winning could restart or double-play the win song for a moment before it stopped. And two layout changes: the player-name text boxes in game setup, and every card in the Players tab, are now a responsive grid instead of one-per-row, so they take up a lot less vertical space \u2014 all the same info is still there, just packed tighter.' },
@@ -1001,7 +1002,7 @@
     }
     var panel = document.getElementById(containerId);
     var roster = loadRoster();
-    var statsList = computeIndividualStats(loadHistory());
+    var statsList = computeIndividualStats(loadHistory().filter(function(g){ return !isSoloGame(g); }));
     var statsMap = {};
     statsList.forEach(function(p){ statsMap[p.name.toLowerCase()] = p; });
 
@@ -2931,6 +2932,7 @@
   function recentGamesForPlayer(name, limit){
     var lowerName = name.toLowerCase();
     var hist = loadHistory().slice().reverse().filter(function(g){
+      if (isSoloGame(g)) return false;
       if (g.mode === 'ffa') return g.participants.some(function(n){ return n.toLowerCase() === lowerName; });
       return g.participants.some(function(team){ return team.some(function(n){ return n.toLowerCase() === lowerName; }); });
     });
@@ -2991,9 +2993,13 @@
       gamesHtml;
   }
 
+  function isSoloGame(g){
+    return g.mode === 'ffa' && Array.isArray(g.participants) && g.participants.length === 1;
+  }
+
   function renderStatsTab(containerId){
     var app = document.getElementById(containerId || 'app');
-    var hist = loadHistory();
+    var hist = loadHistory().filter(function(g){ return !isSoloGame(g); });
     if (hist.length === 0) {
       app.innerHTML = '<div class="empty-state">No stats yet. Play a few games first.</div>';
       return;
