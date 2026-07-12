@@ -278,6 +278,13 @@
   .atc-bull { grid-column: span 2; }
   .cricket-target-grid { padding: 10px; border-radius: var(--radius); }
   .drag-over { outline: 2px dashed var(--border-accent); outline-offset: 2px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+  .modal-panel { background: var(--card); width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 20px; box-shadow: 0 -8px 30px rgba(0,0,0,0.5); position: relative; }
+  .modal-close-btn { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; z-index: 1; }
+  @media (min-width: 600px) {
+    .modal-overlay { align-items: center; }
+    .modal-panel { border-radius: 18px; max-height: 80vh; }
+  }
   @keyframes glowFadeButton {
     0%, 100% { opacity: 0.15; }
     50% { opacity: 0.75; }
@@ -368,6 +375,8 @@
     <div id="changelog-panel" class="changelog-panel" style="display:none;"></div>
   </div>
 </div>
+
+<div id="settings-modal-root"></div>
 
 <script>
 (function(){
@@ -685,8 +694,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.6';
+  var APP_VERSION = '4.8.7';
   var CHANGELOG = [
+    { v: '4.8.7', notes: 'Settings is now a pop-out panel instead of taking over the whole screen \u2014 tap the gear mid-game to adjust theme, sound, or music volume, then close it and you\u2019re back exactly where you left off, game intact. Tap the X or tap outside the panel to close it.' },
     { v: '4.8.6', notes: 'Snippet trigger is back to 50+ per turn instead of 70+ (and the Settings/game description text matches again) \u2014 turns out that was a tougher bar than intended. Also, a player\u2019s recent-games list in Stats now shows who they played against on each result, not just Won/Lost.' },
     { v: '4.8.5', notes: 'Finally found the real cause of the song playback issues \u2014 the diagnostic line from last version showed "HTTP 403" errors, which means Deezer\u2019s preview links quietly expire after a while (that\u2019s on their end, not a bug in the app). Songs now fetch a fresh, working preview link right before every single play, so a song that stops working after sitting for a while will just start working again on its own, without needing to delete and re-add it. Also fixed a bug where hitting Main Menu right after winning could restart or double-play the win song for a moment before it stopped. And two layout changes: the player-name text boxes in game setup, and every card in the Players tab, are now a responsive grid instead of one-per-row, so they take up a lot less vertical space \u2014 all the same info is still there, just packed tighter.' },
     { v: '4.8.4', notes: 'Still chasing the song playback issue \u2014 rather than guess at another fix blind, this version adds a tiny diagnostic line (small grey text, not a button) that appears under a song\u2019s title only when it fails to play, showing the actual technical reason. If it still happens, screenshot or read out what that line says \u2014 it\u2019ll say exactly why (network error, blocked request, decode failure, etc.) instead of just going quiet, which will point to the real fix instead of another guess.' },
@@ -790,7 +800,38 @@
   }
 
   function initSettingsButton(){
-    document.getElementById('settings-btn').addEventListener('click', function(){ setActiveView('settings'); });
+    document.getElementById('settings-btn').addEventListener('click', openSettingsModal);
+  }
+
+  function openSettingsModal(){
+    state.settingsOpen = true;
+    render();
+  }
+
+  function closeSettingsModal(){
+    state.settingsOpen = false;
+    render();
+  }
+
+  function renderSettingsModal(){
+    var root = document.getElementById('settings-modal-root');
+    if (!root) return;
+    if (!state.settingsOpen) {
+      root.innerHTML = '';
+      return;
+    }
+    root.innerHTML =
+      '<div class="modal-overlay" id="settings-modal-overlay">' +
+        '<div class="modal-panel" id="settings-modal-panel">' +
+          '<button type="button" class="modal-close-btn" id="settings-modal-close" aria-label="Close settings">&#10005;</button>' +
+          '<div id="settings-modal-content"></div>' +
+        '</div>' +
+      '</div>';
+    renderSettingsTab('settings-modal-content');
+    document.getElementById('settings-modal-close').addEventListener('click', closeSettingsModal);
+    document.getElementById('settings-modal-overlay').addEventListener('click', function(e){
+      if (e.target.id === 'settings-modal-overlay') closeSettingsModal();
+    });
   }
 
   function renderSettingsTab(containerId){
@@ -1675,6 +1716,7 @@
 
   var state = {
     activeView: 'play',
+    settingsOpen: false,
     stage: 'chooseGame',
     game: '200',
     mode: 'ffa',
@@ -3047,8 +3089,8 @@
     if (state.activeView === 'history') renderHistoryTab('app');
     else if (state.activeView === 'stats') renderStatsTab('app');
     else if (state.activeView === 'players') renderPlayersPanel('app');
-    else if (state.activeView === 'settings') renderSettingsTab('app');
     else renderPlayTab();
+    renderSettingsModal();
   }
 
   function updateTabActiveStates(){
@@ -3061,7 +3103,7 @@
     });
     var settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) {
-      if (state.activeView === 'settings') settingsBtn.classList.add('tab-active');
+      if (state.settingsOpen) settingsBtn.classList.add('tab-active');
       else settingsBtn.classList.remove('tab-active');
     }
   }
