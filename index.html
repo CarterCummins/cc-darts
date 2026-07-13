@@ -280,10 +280,14 @@
   .drag-over { outline: 2px dashed var(--border-accent); outline-offset: 2px; }
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
   .modal-panel { background: var(--card); width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; border-radius: 18px 18px 0 0; padding: 20px; box-shadow: 0 -8px 30px rgba(0,0,0,0.5); position: relative; }
+  .modal-panel.settings-modal-panel { max-width: 680px; }
   .modal-close-btn { position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 16px; z-index: 1; }
+  .settings-color-grid { display: grid; grid-template-columns: 1fr; gap: 0 20px; }
   @media (min-width: 600px) {
     .modal-overlay { align-items: center; }
     .modal-panel { border-radius: 18px; max-height: 80vh; }
+    .modal-panel.settings-modal-panel { max-height: 88vh; }
+    .settings-color-grid { grid-template-columns: 1fr 1fr; }
   }
   @keyframes glowFadeButton {
     0%, 100% { opacity: 0.15; }
@@ -694,8 +698,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.9';
+  var APP_VERSION = '4.8.10';
   var CHANGELOG = [
+    { v: '4.8.10', notes: 'Stats now show Avg misses / game (overview) and Avg misses (per player), matching the existing Avg busts stat. Settings is also wider now on tablet/desktop screens, and the four appearance color pickers sit side-by-side instead of stacked, so there\u2019s a lot less scrolling to see everything.' },
     { v: '4.8.9', notes: 'In History, a solo practice game now says "Solo Round: [name]" instead of "Winner: [name]" \u2014 fitting, since it matches the same call last version made to keep solo games out of Stats.' },
     { v: '4.8.8', notes: 'Solo practice games (1-player Free for all) no longer count toward Stats \u2014 no wins/losses, no leaderboard entry, no recent-games entry, since there was no opponent to actually beat. They still show up in History as a record that you played, just excluded from the Stats page and the Players tab\u2019s quick stat line.' },
     { v: '4.8.7', notes: 'Settings is now a pop-out panel instead of taking over the whole screen \u2014 tap the gear mid-game to adjust theme, sound, or music volume, then close it and you\u2019re back exactly where you left off, game intact. Tap the X or tap outside the panel to close it.' },
@@ -824,7 +829,7 @@
     }
     root.innerHTML =
       '<div class="modal-overlay" id="settings-modal-overlay">' +
-        '<div class="modal-panel" id="settings-modal-panel">' +
+        '<div class="modal-panel settings-modal-panel" id="settings-modal-panel">' +
           '<button type="button" class="modal-close-btn" id="settings-modal-close" aria-label="Close settings">&#10005;</button>' +
           '<div id="settings-modal-content"></div>' +
         '</div>' +
@@ -846,10 +851,12 @@
       '<p class="label" style="margin-top:0;">Presets</p>' +
       '<div class="theme-swatch-grid" id="theme-swatch-grid"></div>' +
       '<p class="label">Custom</p>' +
-      '<label>Trim &middot; cards and borders<input type="color" id="theme-card" /></label>' +
-      '<label>Accent color<input type="color" id="theme-accent" /></label>' +
-      '<label>Button glow color<input type="color" id="theme-button-glow" /></label>' +
-      '<label>Box glow color<input type="color" id="theme-box-glow" /></label>' +
+      '<div class="settings-color-grid">' +
+        '<label>Trim &middot; cards and borders<input type="color" id="theme-card" /></label>' +
+        '<label>Accent color<input type="color" id="theme-accent" /></label>' +
+        '<label>Button glow color<input type="color" id="theme-button-glow" /></label>' +
+        '<label>Box glow color<input type="color" id="theme-box-glow" /></label>' +
+      '</div>' +
       '<button type="button" id="theme-reset" style="width:100%; margin-top:6px;">Reset appearance</button>' +
       '<p class="settings-section-heading">Sound FX</p>' +
       '<p class="label" style="margin-top:0;">Click sounds</p>' +
@@ -2802,6 +2809,7 @@
   function computeOverviewStats(hist){
     var totalGames = hist.length;
     var totalBusts = 0;
+    var totalMisses = 0;
     var highestThrowEver = 0;
     var highestThrowName = null;
     var perGameHighs = [];
@@ -2821,8 +2829,13 @@
             }
             if (t.score > gameHighest) gameHighest = t.score;
           }
+          if (t.miss === true) totalMisses += 1;
           if (t.darts && t.darts.length) {
-            t.darts.forEach(function(d){ dartTotal += d; dartCount += 1; });
+            t.darts.forEach(function(d){
+              dartTotal += d;
+              dartCount += 1;
+              if (d === 0) totalMisses += 1;
+            });
           }
         });
       });
@@ -2830,6 +2843,7 @@
     });
 
     var avgBustsPerGame = totalGames ? (totalBusts / totalGames) : 0;
+    var avgMissesPerGame = totalGames ? (totalMisses / totalGames) : 0;
     var avgHighestPerGame = perGameHighs.length ? (perGameHighs.reduce(function(a, b){ return a + b; }, 0) / perGameHighs.length) : 0;
     var avgPointsPerDart = dartCount ? (dartTotal / dartCount) : 0;
 
@@ -2837,6 +2851,8 @@
       totalGames: totalGames,
       totalBusts: totalBusts,
       avgBustsPerGame: avgBustsPerGame,
+      totalMisses: totalMisses,
+      avgMissesPerGame: avgMissesPerGame,
       highestThrowEver: highestThrowEver,
       highestThrowName: highestThrowName,
       avgHighestPerGame: avgHighestPerGame,
@@ -2905,9 +2921,10 @@
     return Object.keys(map).map(function(k){
       var r = map[k];
       var avgBustsPerGame = r.games ? (r.busts / r.games) : 0;
+      var avgMissesPerGame = r.games ? (r.misses / r.games) : 0;
       var avgHighestPerGame = r.perGameHighs.length ? (r.perGameHighs.reduce(function(a, b){ return a + b; }, 0) / r.perGameHighs.length) : 0;
       var avgPointsPerDart = r.dartCount ? (r.dartTotal / r.dartCount) : 0;
-      return { name: r.name, games: r.games, wins: r.wins, busts: r.busts, misses: r.misses, avgBustsPerGame: avgBustsPerGame, highestThrow: r.highestThrow, avgHighestPerGame: avgHighestPerGame, avgPointsPerDart: avgPointsPerDart };
+      return { name: r.name, games: r.games, wins: r.wins, busts: r.busts, misses: r.misses, avgBustsPerGame: avgBustsPerGame, avgMissesPerGame: avgMissesPerGame, highestThrow: r.highestThrow, avgHighestPerGame: avgHighestPerGame, avgPointsPerDart: avgPointsPerDart };
     }).sort(function(a, b){
       if (b.wins !== a.wins) return b.wins - a.wins;
       return b.games - a.games;
@@ -2964,6 +2981,7 @@
         '<div class="metric-card"><p class="m-label">Busts</p><p class="m-value">' + p.busts + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Misses</p><p class="m-value">' + p.misses + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Avg busts</p><p class="m-value">' + p.avgBustsPerGame.toFixed(1) + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Avg misses</p><p class="m-value">' + p.avgMissesPerGame.toFixed(1) + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Highest throw</p><p class="m-value">' + p.highestThrow + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Avg highest</p><p class="m-value">' + p.avgHighestPerGame.toFixed(1) + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Avg pts/dart</p><p class="m-value">' + p.avgPointsPerDart.toFixed(1) + '</p></div>' +
@@ -3021,6 +3039,7 @@
         '<div class="metric-card"><p class="m-label">Games played</p><p class="m-value">' + overview.totalGames + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Total busts</p><p class="m-value">' + overview.totalBusts + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Avg busts / game</p><p class="m-value">' + overview.avgBustsPerGame.toFixed(1) + '</p></div>' +
+        '<div class="metric-card"><p class="m-label">Avg misses / game</p><p class="m-value">' + overview.avgMissesPerGame.toFixed(1) + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Highest throw</p>' + highestCardBody + '</div>' +
         '<div class="metric-card"><p class="m-label">Avg highest / game</p><p class="m-value">' + overview.avgHighestPerGame.toFixed(1) + '</p></div>' +
         '<div class="metric-card"><p class="m-label">Avg pts / dart</p><p class="m-value">' + overview.avgPointsPerDart.toFixed(1) + '</p></div>' +
