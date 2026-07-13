@@ -694,8 +694,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.8';
+  var APP_VERSION = '4.8.9';
   var CHANGELOG = [
+    { v: '4.8.9', notes: 'In History, a solo practice game now says "Solo Round: [name]" instead of "Winner: [name]" \u2014 fitting, since it matches the same call last version made to keep solo games out of Stats.' },
     { v: '4.8.8', notes: 'Solo practice games (1-player Free for all) no longer count toward Stats \u2014 no wins/losses, no leaderboard entry, no recent-games entry, since there was no opponent to actually beat. They still show up in History as a record that you played, just excluded from the Stats page and the Players tab\u2019s quick stat line.' },
     { v: '4.8.7', notes: 'Settings is now a pop-out panel instead of taking over the whole screen \u2014 tap the gear mid-game to adjust theme, sound, or music volume, then close it and you\u2019re back exactly where you left off, game intact. Tap the X or tap outside the panel to close it.' },
     { v: '4.8.6', notes: 'Snippet trigger is back to 50+ per turn instead of 70+ (and the Settings/game description text matches again) \u2014 turns out that was a tougher bar than intended. Also, a player\u2019s recent-games list in Stats now shows who they played against on each result, not just Won/Lost.' },
@@ -2758,6 +2759,7 @@
       }
       var gameLabel = g.gameLabel || (g.startScore ? ('Countdown from ' + g.startScore) : 'Game');
       var modeLabel = g.mode === 'ffa' ? 'Free for all' : '2v2 teams';
+      var resultLabel = isSoloGame(g) ? 'Solo Round' : 'Winner';
       return '<div class="history-item">' +
         '<div class="hi-top">' +
           '<span class="hi-date">' + formatDate(g.date) + '</span>' +
@@ -2766,7 +2768,7 @@
             '<button type="button" class="chip-settings delete-game-btn" data-id="' + g.id + '" aria-label="Delete this game">&#10005;</button>' +
           '</span>' +
         '</div>' +
-        '<div class="hi-winner">Winner: <b>' + g.winner + '</b></div>' +
+        '<div class="hi-winner">' + resultLabel + ': <b>' + g.winner + '</b></div>' +
         '<div class="hi-participants">' + participantsLabel + '</div>' +
       '</div>';
     }).join('');
