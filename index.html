@@ -271,11 +271,20 @@
   .turn-total-line .turn-total-sofar { font-size: 13px; font-weight: 400; color: var(--text-secondary); }
   .undo-btn { width: 100%; margin-top: 10px; }
   .undo-btn:disabled { opacity: 0.35; cursor: default; }
-  .atc-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(50px, 1fr)); gap: 6px; margin-bottom: 12px; padding: 10px; border-radius: var(--radius); }
-  .atc-num-btn { padding: 12px 4px; font-weight: 600; }
-  .atc-num-btn.atc-target { border: 2px solid var(--border-accent); color: var(--border-accent); }
-  .atc-num-btn.atc-done { opacity: 0.35; }
-  .atc-bull { grid-column: span 2; }
+  .atc-dartboard-wrap { display: flex; justify-content: center; margin-bottom: 12px; }
+  .atc-dartboard { width: 100%; max-width: 320px; height: auto; display: block; touch-action: manipulation; }
+  .atc-wedge { fill: var(--card); stroke: var(--bg); stroke-width: 1.5; cursor: pointer; transition: fill 0.15s ease, opacity 0.15s ease; }
+  .atc-wedge.alt { fill: var(--card-active); }
+  .atc-bullseye { fill: var(--danger); }
+  .atc-wedge.target { fill: var(--border-accent); }
+  .atc-wedge.done { opacity: 0.28; cursor: default; }
+  .atc-wedge:not(.done):active { filter: brightness(1.25); }
+  .atc-wedge-label { font-size: 13px; font-weight: 600; fill: var(--text); pointer-events: none; font-family: 'Poppins', sans-serif; }
+  .atc-wedge-label.on-target { fill: var(--bg); }
+  .atc-wedge-label.done { fill: var(--text-muted); opacity: 0.6; }
+  @media (hover: hover) {
+    .atc-wedge:not(.done):hover { filter: brightness(1.2); }
+  }
   .cricket-target-grid { padding: 10px; border-radius: var(--radius); }
   .drag-over { outline: 2px dashed var(--border-accent); outline-offset: 2px; }
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
@@ -340,7 +349,7 @@
     content: none;
   }
   .player-card button::after, .metric-card button::after, .history-item button::after, .edit-panel button::after, .team-block button::after, .stat-card .stat-row::after,
-  .dart-keypad button::after, .atc-board button::after, .cricket-target-grid button::after {
+  .dart-keypad button::after, .cricket-target-grid button::after {
     content: none;
   }
   @media (prefers-reduced-motion: reduce) {
@@ -698,8 +707,9 @@
     document.addEventListener('click', unlockAudioPlayback, opts);
   }
 
-  var APP_VERSION = '4.8.10';
+  var APP_VERSION = '4.8.11';
   var CHANGELOG = [
+    { v: '4.8.11', notes: 'Around the Clock now has an actual dartboard graphic instead of a grid of number buttons \u2014 tap the wedge you hit (numbers laid out in real dartboard order, plus the bullseye in the middle). Your target wedge is highlighted, and each number greys out and locks once you\u2019ve passed it, so you can\u2019t double-tap it by mistake. Miss and Undo stay as buttons underneath.' },
     { v: '4.8.10', notes: 'Stats now show Avg misses / game (overview) and Avg misses (per player), matching the existing Avg busts stat. Settings is also wider now on tablet/desktop screens, and the four appearance color pickers sit side-by-side instead of stacked, so there\u2019s a lot less scrolling to see everything.' },
     { v: '4.8.9', notes: 'In History, a solo practice game now says "Solo Round: [name]" instead of "Winner: [name]" \u2014 fitting, since it matches the same call last version made to keep solo games out of Stats.' },
     { v: '4.8.8', notes: 'Solo practice games (1-player Free for all) no longer count toward Stats \u2014 no wins/losses, no leaderboard entry, no recent-games entry, since there was no opponent to actually beat. They still show up in History as a record that you played, just excluded from the Stats page and the Players tab\u2019s quick stat line.' },
@@ -2484,6 +2494,60 @@
     document.getElementById('reset-btn').addEventListener('click', resetGame);
   }
 
+  var DARTBOARD_ORDER = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+
+  function polarToXY(cx, cy, r, angleDeg){
+    var rad = angleDeg * Math.PI / 180;
+    return { x: cx + r * Math.sin(rad), y: cy - r * Math.cos(rad) };
+  }
+
+  function wedgePathD(cx, cy, rInner, rOuter, startDeg, endDeg){
+    var p1 = polarToXY(cx, cy, rInner, startDeg);
+    var p2 = polarToXY(cx, cy, rOuter, startDeg);
+    var p3 = polarToXY(cx, cy, rOuter, endDeg);
+    var p4 = polarToXY(cx, cy, rInner, endDeg);
+    return 'M ' + p1.x.toFixed(2) + ' ' + p1.y.toFixed(2) +
+      ' L ' + p2.x.toFixed(2) + ' ' + p2.y.toFixed(2) +
+      ' A ' + rOuter + ' ' + rOuter + ' 0 0 1 ' + p3.x.toFixed(2) + ' ' + p3.y.toFixed(2) +
+      ' L ' + p4.x.toFixed(2) + ' ' + p4.y.toFixed(2) +
+      ' A ' + rInner + ' ' + rInner + ' 0 0 0 ' + p1.x.toFixed(2) + ' ' + p1.y.toFixed(2) +
+      ' Z';
+  }
+
+  function dartboardSvgHtml(target){
+    var cx = 150, cy = 150, rOuter = 145, rInner = 42;
+    var parts = DARTBOARD_ORDER.map(function(num, i){
+      var startDeg = i * 18 - 9;
+      var endDeg = i * 18 + 9;
+      var d = wedgePathD(cx, cy, rInner, rOuter, startDeg, endDeg);
+      var isDone = num < target;
+      var isTarget = num === target;
+      var cls = 'atc-wedge' + (i % 2 === 0 ? ' alt' : '') + (isTarget ? ' target' : '') + (isDone ? ' done' : '');
+      var labelCls = 'atc-wedge-label' + (isTarget ? ' on-target' : '') + (isDone ? ' done' : '');
+      var labelPos = polarToXY(cx, cy, rOuter - 20, i * 18);
+      return '<path class="' + cls + '" d="' + d + '" data-num="' + num + '"></path>' +
+        '<text class="' + labelCls + '" x="' + labelPos.x.toFixed(1) + '" y="' + labelPos.y.toFixed(1) + '" text-anchor="middle" dominant-baseline="central">' + num + '</text>';
+    }).join('');
+    var bullDone = target > 21;
+    var bullTarget = target === 21;
+    var bullCls = 'atc-wedge atc-bullseye' + (bullTarget ? ' target' : '') + (bullDone ? ' done' : '');
+    var bullLabelCls = 'atc-wedge-label' + (bullTarget ? ' on-target' : '') + (bullDone ? ' done' : '');
+    parts += '<circle class="' + bullCls + '" cx="' + cx + '" cy="' + cy + '" r="' + rInner + '" data-num="21"></circle>' +
+      '<text class="' + bullLabelCls + '" x="' + cx + '" y="' + cy + '" text-anchor="middle" dominant-baseline="central">Bull</text>';
+    return '<div class="atc-dartboard-wrap"><svg class="atc-dartboard" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">' + parts + '</svg></div>';
+  }
+
+  function wireDartboard(){
+    var svg = document.querySelector('.atc-dartboard');
+    if (!svg) return;
+    svg.querySelectorAll('[data-num]').forEach(function(el){
+      el.addEventListener('click', function(){
+        if (el.classList.contains('done')) return;
+        hitAtcNumber(parseInt(el.dataset.num, 10));
+      });
+    });
+  }
+
   function renderAtcPlaying(){
     var app = document.getElementById('app');
     var entities = activeEntities();
@@ -2500,18 +2564,10 @@
       return '<tr><td>' + h.hits + ' hit' + (h.hits === 1 ? '' : 's') + '</td><td>' + atcTargetLabel(h.target) + '</td></tr>';
     }).join('');
 
-    var boardCells = '';
-    for (var n = 1; n <= 20; n++) {
-      var cls = n < entity.target ? 'atc-done' : (n === entity.target ? 'atc-target' : '');
-      boardCells += '<button type="button" class="atc-num-btn ' + cls + '" data-num="' + n + '">' + n + '</button>';
-    }
-    var bullCls = entity.target === 21 ? 'atc-target' : (entity.target > 21 ? 'atc-done' : '');
-    boardCells += '<button type="button" class="atc-num-btn atc-bull ' + bullCls + '" data-num="21">Bull</button>';
-
     app.innerHTML =
       '<div class="card-grid">' + cards + '</div>' +
       '<div class="turn-row">' + avatarHtml(getProfile(thrower).photo, thrower) + '<p>' + thrower + '&rsquo;s turn &middot; dart ' + (state.turnDarts.length + 1) + ' of 3 &middot; aiming for ' + atcTargetLabel(entity.target) + '</p></div>' +
-      '<div class="atc-board" id="atc-board">' + boardCells + '</div>' +
+      dartboardSvgHtml(entity.target) +
       '<button type="button" class="dart-mult-btn miss-btn" id="atc-miss-btn" style="width:100%;">Miss</button>' +
       undoButtonHtml() +
       '<table style="margin-top:16px;"><thead><tr><th>Hits</th><th>New target</th></tr></thead><tbody>' +
@@ -2519,9 +2575,7 @@
       '</tbody></table>' +
       '<button class="reset-btn" id="reset-btn">Reset game</button>';
 
-    document.querySelectorAll('.atc-num-btn').forEach(function(b){
-      b.addEventListener('click', function(){ hitAtcNumber(parseInt(b.dataset.num, 10)); });
-    });
+    wireDartboard();
     document.getElementById('atc-miss-btn').addEventListener('click', missAtc);
     wireUndoButton();
     document.getElementById('reset-btn').addEventListener('click', resetGame);
